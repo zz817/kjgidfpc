@@ -240,13 +240,13 @@ HRESULT InitStagingResources(int width, int height)
 
     if (SUCCEEDED(hr))
     {
-        desc.Format = DXGI_FORMAT_R16G16_FLOAT;
+        desc.Format = g_configInfo.mevcFormat;
         hr = g_pDevice->CreateTexture2D(&desc, nullptr, &StagResourceList[static_cast<size_t>(StagResType::Mevc)]);
     }
 
     if (SUCCEEDED(hr))
     {
-        desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+        desc.Format = g_configInfo.depthFormat;
         hr = g_pDevice->CreateTexture2D(&desc, nullptr, &StagResourceList[static_cast<size_t>(StagResType::Depth)]);
     }
 
@@ -685,7 +685,7 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
     };
 
-    g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, 0);
+    g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Clearing)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -698,7 +698,7 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
 
     ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
 
-    g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, 0);
+    g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
 }
 
 void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
@@ -721,7 +721,7 @@ void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
     };
 
-    g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, 0);
+    g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Mevc)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -734,7 +734,7 @@ void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
     ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
-    g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, 0);
+    g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
     ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
     g_pContext->CSSetShaderResources(0, 4, emptySrvs);
 }
@@ -752,7 +752,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].uav,
         };
-        g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, nullptr);
 
         ID3D11ShaderResourceView* ppSrvs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)].srv,
@@ -774,7 +774,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
         ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
         g_pContext->CSSetShaderResources(0, 4, emptySrvs);
     }
@@ -786,7 +786,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullY)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFull)].uav,
         };
-        g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, nullptr);
 
         ID3D11ShaderResourceView* ppSrvs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)].srv,
@@ -798,7 +798,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[3] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 3, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 3, emptyUavs, nullptr);
         ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
         g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
@@ -830,7 +830,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         ID3D11UnorderedAccessView* ppUavs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv1)].uav};
-        g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
         D3D11_MAPPED_SUBRESOURCE mapped = {};
         g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -844,7 +844,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[1] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 1, emptySrvs);
     }
 
     PushPullParameters ppParametersLv12;
@@ -865,7 +867,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         ID3D11UnorderedAccessView* ppUavs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv2)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv2)].uav};
-        g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
         D3D11_MAPPED_SUBRESOURCE mapped = {};
         g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -879,7 +881,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[2] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
 
     PushPullParameters ppParametersLv23;
@@ -901,7 +905,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         ID3D11UnorderedAccessView* ppUavs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv3)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv3)].uav};
-        g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
         D3D11_MAPPED_SUBRESOURCE mapped = {};
         g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -915,7 +919,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[2] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
 
     if (layers >= 3)
@@ -948,7 +954,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[4] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 4, emptySrvs);
     }
 
     if (layers >= 2)
@@ -982,7 +990,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[4] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 4, emptySrvs);
     }
 
     if (layers >= 1)
@@ -1010,7 +1020,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
         ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[3] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 3, emptySrvs);
     }
 }
 
@@ -1029,7 +1041,7 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv};
     g_pContext->CSSetShaderResources(0, 8, ppSrvs);
 
-    g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, 0);
+    g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Resolution)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
