@@ -1,7 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <d3d11.h>
-#include <d3dcompiler.h>
 
 #include <array>
 #include <filesystem>
@@ -9,6 +8,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -51,6 +51,7 @@ static constexpr size_t StagTypeCount          = static_cast<size_t>(StagResType
 static constexpr size_t InputTypeCount         = static_cast<size_t>(InputResType::Count);
 static constexpr size_t ConstBufferTypeCount   = static_cast<size_t>(ConstBufferType::Count);
 static constexpr size_t InternalTypeCount      = static_cast<size_t>(InternalResType::Count);
+static constexpr size_t SamplerTypeCount      = static_cast<size_t>(SamplerType::Count);
 
 std::array<ID3D11ComputeShader*, ComputeShaderTypeCount> ComputeShaders{};
 
@@ -64,6 +65,8 @@ std::array<ID3D11Buffer*, ConstBufferTypeCount> ConstantBufferList{};
 std::array<ID3D11Texture2D*, InternalTypeCount> InternalResourceList{};
 std::array<ResourceView, InternalTypeCount>     InternalResourceViewList{};
 
+std::array<ID3D11SamplerState*, SamplerTypeCount> SamplerList{};
+
 std::map<ID3D11Resource*, ResourceView> ResourceViewMap{};
 
 FrameGenerationInputCb g_constBufData;
@@ -74,7 +77,6 @@ ID3D11Texture2D*           g_pColorOutput;
 ID3D11UnorderedAccessView* g_pColorOutputUav;
 
 #pragma comment(lib, "d3d11")
-#pragma comment(lib, "d3dcompiler")
 
 #define RELEASE_SAFE(pObj) \
     if (pObj != nullptr)   \
@@ -178,6 +180,11 @@ void ReleaseContext()
     for (auto buf : ConstantBufferList)
     {
         RELEASE_SAFE(buf);
+    }
+
+    for (auto sampler : SamplerList)
+    {
+        RELEASE_SAFE(sampler);
     }
 
     RELEASE_SAFE(g_pColorOutputUav);
@@ -459,6 +466,96 @@ HRESULT InitResources()
     return hr;
 }
 
+HRESULT InitSamplerList()
+{
+    HRESULT hr = S_OK;
+
+    {
+        D3D11_SAMPLER_DESC sampDesc = {
+            D3D11_FILTER_MIN_MAG_MIP_POINT,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            0.0f,
+            1,
+            D3D11_COMPARISON_NEVER,
+            {0.0f, 0.0f, 0.0f, 0.0f},
+            0.0f,
+            D3D11_FLOAT32_MAX,
+        };
+        hr  = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::PointClamp)]);
+    }
+
+    {
+        D3D11_SAMPLER_DESC sampDesc = {
+            D3D11_FILTER_MIN_MAG_MIP_POINT,
+            D3D11_TEXTURE_ADDRESS_MIRROR,
+            D3D11_TEXTURE_ADDRESS_MIRROR,
+            D3D11_TEXTURE_ADDRESS_MIRROR,
+            0.0f,
+            1,
+            D3D11_COMPARISON_NEVER,
+            {0.0f, 0.0f, 0.0f, 0.0f},
+            0.0f,
+            D3D11_FLOAT32_MAX,
+        };
+        hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::PointMirror)]);
+    }
+
+    {
+        D3D11_SAMPLER_DESC sampDesc = {
+            D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            0.0f,
+            1,
+            D3D11_COMPARISON_NEVER,
+            {0.0f, 0.0f, 0.0f, 0.0f},
+            0.0f,
+            D3D11_FLOAT32_MAX,
+        };
+
+        hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
+    }
+
+    {
+        D3D11_SAMPLER_DESC sampDesc = {
+            D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D11_TEXTURE_ADDRESS_MIRROR,
+            D3D11_TEXTURE_ADDRESS_MIRROR,
+            D3D11_TEXTURE_ADDRESS_MIRROR,
+            0.0f,
+            1,
+            D3D11_COMPARISON_NEVER,
+            {0.0f, 0.0f, 0.0f, 0.0f},
+            0.0f,
+            D3D11_FLOAT32_MAX,
+        };
+
+        hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::LinearMirror)]);
+    }
+
+    {
+        D3D11_SAMPLER_DESC sampDesc = {
+            D3D11_FILTER_ANISOTROPIC,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            D3D11_TEXTURE_ADDRESS_CLAMP,
+            0.0f,
+            1,
+            D3D11_COMPARISON_NEVER,
+            {0.0f, 0.0f, 0.0f, 0.0f},
+            0.0f,
+            D3D11_FLOAT32_MAX,
+        };
+
+        hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::AnisoClamp)]);
+    }
+
+    return hr;
+}
+
 HRESULT CreateComputeShader(ID3D11ComputeShader** ppShader, const std::string& dxbcFile)
 {
     HRESULT       hr = E_FAIL;
@@ -480,7 +577,7 @@ void PrepareInput(uint32_t frameIndex)
     auto stagDepth      = StagResourceList[static_cast<size_t>(StagResType::Depth)];
 
     {
-        std::string clipFile     = "ClipInfo/clipinfo_" + std::to_string(frameIndex) + ".bin";
+        std::string clipFile     = "ClipInfo/clipinfo_" + std::to_string(frameIndex + 1) + ".bin";
         auto        pervClipInfo = AcquireFileContent(clipFile);
 
         uint32_t offset = 0;
@@ -543,6 +640,8 @@ void PrepareInput(uint32_t frameIndex)
         memcpy(mapped.pData, pPixels, h * mapped.RowPitch);
         g_pContext->Unmap(stagColorInput, 0);
         g_pContext->CopyResource(InputResourceList[static_cast<size_t>(InputResType::PrevColor)], stagColorInput);
+
+        stbi_image_free(pPixels);
     }
 
     {
@@ -556,6 +655,8 @@ void PrepareInput(uint32_t frameIndex)
         memcpy(mapped.pData, pPixels, h * mapped.RowPitch);
         g_pContext->Unmap(stagColorInput, 0);
         g_pContext->CopyResource(InputResourceList[static_cast<size_t>(InputResType::CurrColor)], stagColorInput);
+
+        stbi_image_free(pPixels);
     }
 }
 
@@ -628,6 +729,7 @@ void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
     memcpy(mapped.pData, pCb, mapped.RowPitch);
     g_pContext->Unmap(buf, 0);
 
+    g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
@@ -667,7 +769,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
 
         g_pContext->CSSetConstantBuffers(0, 1, &buf);
 
-        // CHI_VALIDATE(m_pCompute->bindSampler(11, 0, chi::eSamplerLinearClamp));
+        g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
@@ -691,7 +793,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
             InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv};
         g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
-        // CHI_VALIDATE(m_pCompute->bindSampler(6, 0, chi::eSamplerLinearClamp));
+        g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
 
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
@@ -937,7 +1039,7 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
     g_pContext->Unmap(buf, 0);
 
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
-
+    g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
     ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
@@ -1017,9 +1119,23 @@ int main()
 {
     ParseConfig(g_configInfo);
 
-    HRESULT hr = InitSampleContext(true);
+    std::cout << "BeginFrameId: " << g_configInfo.beginFrameId << std::endl;
+    std::cout << "EndFrameId: " << g_configInfo.endFrameId << std::endl;
+    std::cout << "InterpolatedFrames: " << g_configInfo.interpolatedFrames << ", note current only support 1"
+              << std::endl;
 
     std::filesystem::create_directory("ColorOutput");
+
+    HRESULT hr = InitSampleContext(true);
+
+    if (SUCCEEDED(hr))
+    {
+        std::cout << "Create D3D11 Context Success" << std::endl;
+    }
+    else
+    {
+        std::cout << "Create D3D11 Context Fail" << std::endl;
+    }
 
     std::vector<ShaderInfo> shaderList = {
         {ComputeShaderType::Clear,        "phsr_fg_clearing.dxbc"    },
@@ -1039,15 +1155,50 @@ int main()
                                  shaderList[i].dxbcFile);
     }
 
-    hr = InitResources();
-
-    for (uint32_t i = g_configInfo.beginFrameId; i < g_configInfo.endFrameId; i++)
+    if (SUCCEEDED(hr))
     {
+        std::cout << "Create Compute Shaders Success" << std::endl;
+    }
+    else
+    {
+        std::cout << "Create Compute Shaders Fail. Exit" << std::endl;
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = InitSamplerList();
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        std::cout << "Init Samplers Success" << std::endl;
+    }
+    else
+    {
+        std::cout << "Init Samplers Fail. Exit" << std::endl;
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = InitResources();
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        std::cout << "Init Resource Success" << std::endl;
+    }
+    else
+    {
+        std::cout << "Init Resource Fail. Exit" << std::endl;
+    }
+
+    for (uint32_t i = g_configInfo.beginFrameId; i < g_configInfo.endFrameId && SUCCEEDED(hr); i++)
+    {
+        std::cout << "Run algo frame: " << i << std::endl;
         RunAlgo(i, g_configInfo.interpolatedFrames);
     }
 
-    int ret = SUCCEEDED(hr);
-
     ReleaseContext();
-    return ret;
+
+    return hr;
 }

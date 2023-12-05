@@ -77,6 +77,16 @@ enum class ConstBufferType : uint32_t {
   Count
 };
 
+enum class SamplerType : uint32_t
+{
+  LinearClamp,
+  LinearMirror,
+  AnisoClamp,
+  PointClamp,
+  PointMirror,
+  Count
+};
+
 struct ResourceView {
   ID3D11ShaderResourceView* srv;
   ID3D11UnorderedAccessView* uav;
