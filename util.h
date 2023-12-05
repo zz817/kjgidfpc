@@ -48,7 +48,12 @@ enum class InternalResType : uint32_t {
   ReprojectedFull,
   ReprojectedHalfTip,
   ReprojectedHalfTop,
+  ReprojectedFullFiltered,
+  ReprojectedHalfTipFiltered,
   ReprojectedHalfTopFiltered,
+
+  CurrMevcFiltered,
+  PrevMevcFiltered,
 
   MotionVectorFullLv0,
   MotionVectorTipLv0,
@@ -167,7 +172,11 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ReprojectedFull:
     case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTop:
+    case InternalResType::ReprojectedFullFiltered:
+    case InternalResType::ReprojectedHalfTipFiltered:
     case InternalResType::ReprojectedHalfTopFiltered:
+    case InternalResType::CurrMevcFiltered:
+    case InternalResType::PrevMevcFiltered:
     case InternalResType::MotionVectorFullLv0:
     case InternalResType::MotionVectorTipLv0:
     case InternalResType::MotionVectorTopLv0:
@@ -202,7 +211,11 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedFull:
     case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTop:
+    case InternalResType::ReprojectedFullFiltered:
+    case InternalResType::ReprojectedHalfTipFiltered:
     case InternalResType::ReprojectedHalfTopFiltered:
+    case InternalResType::CurrMevcFiltered:
+    case InternalResType::PrevMevcFiltered:
     case InternalResType::MotionVectorFullLv0:
     case InternalResType::MotionVectorTipLv0:
     case InternalResType::MotionVectorTopLv0:
