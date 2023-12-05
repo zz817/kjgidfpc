@@ -115,16 +115,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_clearing.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_clearing.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_firstleg.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_firstleg.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_laststretch.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_laststretch.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_mergingfull.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_mergingfull.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_merginghalf.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_merginghalf.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_pulling.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pulling.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_pushing.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pushing.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_reprojection.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_reprojection.dxbc
-fxc.exe  /Gec /T cs_5_0 /E main $(SolutionDir)shaders\phsr_fg_resolution.hlsl  /Fo $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_resolution.dxbc
-</Command>
+      <Command>$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_clearing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_clearing.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_firstleg.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_firstleg.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_laststretch.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_laststretch.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_mergingfull.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_mergingfull.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_merginghalf.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_merginghalf.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_pulling.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pulling.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_pushing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pushing.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_reprojection.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_reprojection.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_resolution.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_resolution.dxbc</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
