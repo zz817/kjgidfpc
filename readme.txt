@@ -43,3 +43,5 @@ The json like:
 
 The project will auto-gen dxbc file to exe directory, it means you can modify the hlsl file and build project, the shader will auto update.
 Also you can wirte only hlsl file and compile it to dxbc and then set the dxbc file to exe directory.
+
+Test data link: https://drive.google.com/file/d/12dMkKSQmnnrl-C85cgQOy8QjKece2qQu/view?usp=drive_link
