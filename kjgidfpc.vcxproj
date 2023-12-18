@@ -116,6 +116,7 @@
     </Link>
     <PreBuildEvent>
       <Command>$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_clearing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_clearing.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_normalizing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_normalizing.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_firstleg.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_firstleg.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_laststretch.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_laststretch.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_mergingfull.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_mergingfull.dxbc

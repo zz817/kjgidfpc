@@ -8,6 +8,7 @@
 
 enum class ComputeShaderType : uint32_t {
   Clear,
+  Normalizing,
   Reprojection,
   MergeHalf,
   MergeFull,
@@ -54,6 +55,8 @@ enum class InternalResType : uint32_t {
 
   CurrMevcFiltered,
   PrevMevcFiltered,
+  CurrMvecDuplicated,
+  PrevMvecDuplicated,
 
   MotionVectorFullLv0,
   MotionVectorTipLv0,
@@ -75,6 +78,7 @@ enum class InternalResType : uint32_t {
 
 enum class ConstBufferType : uint32_t {
   Clearing,
+  Normalizing,
   Mevc,
   Merge,
   PushPull,
@@ -107,6 +111,14 @@ struct ClearingConstParamStruct {
   float tipTopDistance[2];
   float viewportSize[2];
   float viewportInv[2];
+};
+
+struct NormalizingConstParamStruct
+{
+  uint32_t dimensions[2];
+  float    tipTopDistance[2];
+  float    viewportSize[2];
+  float    viewportInv[2];
 };
 
 struct MVecParamStruct {
@@ -177,6 +189,8 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
+    case InternalResType::CurrMvecDuplicated:
+    case InternalResType::PrevMvecDuplicated:
     case InternalResType::MotionVectorFullLv0:
     case InternalResType::MotionVectorTipLv0:
     case InternalResType::MotionVectorTopLv0:
@@ -216,6 +230,8 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
+    case InternalResType::CurrMvecDuplicated:
+    case InternalResType::PrevMvecDuplicated:
     case InternalResType::MotionVectorFullLv0:
     case InternalResType::MotionVectorTipLv0:
     case InternalResType::MotionVectorTopLv0:
