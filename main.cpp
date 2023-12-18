@@ -391,44 +391,21 @@ HRESULT InitAlgoResources(int width, int height)
     bufDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
     bufDesc.StructureByteStride = 0;
 
-    if (SUCCEEDED(hr))
+    std::map<uint32_t, size_t> ConstBufferSizeMap = {
+        {static_cast<uint32_t>(ConstBufferType::Clearing), sizeof(ClearingConstParamStruct)   },
+        {static_cast<uint32_t>(ConstBufferType::Normalizing), sizeof(NormalizingConstParamStruct)},
+        {static_cast<uint32_t>(ConstBufferType::Mevc),         sizeof(MVecParamStruct)            },
+        {static_cast<uint32_t>(ConstBufferType::Merge),        sizeof(MergeParamStruct)           },
+        {static_cast<uint32_t>(ConstBufferType::PushPull),     sizeof(PushPullParameters)         },
+        {static_cast<uint32_t>(ConstBufferType::Resolution),   sizeof(ResolutionConstParamStruct) },
+    };
+    
+    for (uint32_t i = 0; i < static_cast<uint32_t>(ConstBufferType::Count) && SUCCEEDED(hr); i++)
     {
-        bufDesc.ByteWidth = sizeof(ClearingConstParamStruct);
+        bufDesc.ByteWidth = ConstBufferSizeMap[i];
         hr                = g_pDevice->CreateBuffer(&bufDesc,
                                      nullptr,
-                                     &ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Clearing)]);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        bufDesc.ByteWidth = sizeof(MVecParamStruct);
-        hr                = g_pDevice->CreateBuffer(&bufDesc,
-                                     nullptr,
-                                     &ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Mevc)]);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        bufDesc.ByteWidth = sizeof(MergeParamStruct);
-        hr                = g_pDevice->CreateBuffer(&bufDesc,
-                                     nullptr,
-                                     &ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Merge)]);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        bufDesc.ByteWidth = sizeof(PushPullParameters);
-        hr                = g_pDevice->CreateBuffer(&bufDesc,
-                                     nullptr,
-                                     &ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)]);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        bufDesc.ByteWidth = sizeof(ResolutionConstParamStruct);
-        hr                = g_pDevice->CreateBuffer(&bufDesc,
-                                     nullptr,
-                                     &ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Resolution)]);
+                                     &ConstantBufferList[i]);
     }
 
     return hr;
@@ -699,6 +676,36 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
     ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
 
     g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
+}
+
+void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_t grid[])
+{
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Normalizing)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {
+        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrMevc)].srv,
+        InputResourceViewList[static_cast<uint32_t>(InputResType::PrevMevc)].srv};
+    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)].uav,
+    };
+    g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Normalizing)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, pCb, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
+    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
 }
 
 void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
@@ -1036,8 +1043,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFull)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullFiltered)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv};
     g_pContext->CSSetShaderResources(0, 8, ppSrvs);
 
@@ -1082,10 +1089,20 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             ProcessFrameGenerationClearing(&cb, grid);
         }
 
-        AddPushPullPasses(InputResourceList[static_cast<uint32_t>(InputResType::CurrMevc)],
+        {
+            // Normalizing
+            NormalizingConstParamStruct cb = {};
+            memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
+            memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
+            memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
+            memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+            ProcessFrameGenerationNormalizing(&cb, grid);
+        }
+
+        AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)],
                           InternalResourceList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)],
                           3);
-        AddPushPullPasses(InputResourceList[static_cast<uint32_t>(InputResType::PrevMevc)],
+        AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)],
                           InternalResourceList[static_cast<uint32_t>(InternalResType::PrevMevcFiltered)],
                           3);
 
@@ -1165,6 +1182,7 @@ int main()
 
     std::vector<ShaderInfo> shaderList = {
         {ComputeShaderType::Clear,        "phsr_fg_clearing.dxbc"    },
+        {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
         {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },
         {ComputeShaderType::MergeFull,    "phsr_fg_mergingfull.dxbc" },
