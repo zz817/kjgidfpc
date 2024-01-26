@@ -34,7 +34,7 @@ static float3 debugYellow = float3(1.0f, 1.0f, 0.0f);
 static float3 debugMagenta = float3(1.0f, 0.0f, 1.0f);
 static float3 debugCyan = float3(0.0f, 1.0f, 1.0f);
 
-//#define DEBUG_COLORS
+#define DEBUG_COLORS
 
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]
@@ -143,7 +143,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
             float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
-            outputTexture[currentPixelIndex] = float4(finalOutputColor, 1.0f);
+            outputTexture[currentPixelIndex] = float4(tipSample, 1.0f);
             //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
             //outputTexture[currentPixelIndex] = float4(velocityTopCombined, velocityTipCombined) * 10.0f;
         }
