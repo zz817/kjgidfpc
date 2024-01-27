@@ -53,11 +53,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 motionCaliberatedUVHalfTip = samplePosHalfTip;
     motionCaliberatedUVHalfTip = clamp(motionCaliberatedUVHalfTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 motionHalfTipCaliberated = prevMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTip, 0).xy;
-    //prevMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTip, 0);
-    if (bIsHalfTipUnwritten)
+    /*if (bIsHalfTipUnwritten)
     {
         motionHalfTipCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-    }
+    }*/
 
     uint fullX = motionReprojFullX[currentPixelIndex];
     uint fullY = motionReprojFullY[currentPixelIndex];

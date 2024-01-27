@@ -47,6 +47,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     const float distanceHalfTop = tipTopDistance.y;
 	
     //Tip extrapolation --> ->
+    //We use static mvec for now
     float2 halfTipTranslation = mPrev * distanceHalfTip;
     float2 halfTipTracedScreenPos = screenPos - halfTipTranslation;
     int2 halfTipTracedIndex = floor(halfTipTracedScreenPos * viewportSize);

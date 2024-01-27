@@ -147,6 +147,9 @@ struct PushPullParameters {
 };
 
 struct ResolutionConstParamStruct {
+  float prevClipToClip[16];
+  float clipToPrevClip[16];
+
   uint32_t dimensions[2];
   float tipTopDistance[2];
   float viewportSize[2];

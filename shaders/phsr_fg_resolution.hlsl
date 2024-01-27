@@ -6,6 +6,7 @@ Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
 Texture2D<float2> currMotionUnprojected;
+Texture2D<float2> prevMotionUnprojected;
 
 Texture2D<float2> motionReprojectedFull;
 Texture2D<float2> motionReprojectedHalfTip;
@@ -17,6 +18,9 @@ RWTexture2D<float4> outputTexture;
 
 cbuffer shaderConsts : register(b0)
 {
+    float4x4 prevClipToClip;
+    float4x4 clipToPrevClip;
+    
     uint2 dimensions;
     float2 tipTopDistance;
     float2 viewportSize;
@@ -34,7 +38,7 @@ static float3 debugYellow = float3(1.0f, 1.0f, 0.0f);
 static float3 debugMagenta = float3(1.0f, 0.0f, 1.0f);
 static float3 debugCyan = float3(0.0f, 1.0f, 1.0f);
 
-#define DEBUG_COLORS
+//#define DEBUG_COLORS
 
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]
@@ -93,6 +97,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = topSample;
 #ifdef DEBUG_COLORS
         finalSample = debugRed;
+        finalSample = float3(halfTopTranslation, 0.0f);
 #endif
     }
     /*else if (isTopVisible)
@@ -102,14 +107,15 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = debugBlue;
 #endif
     }*/
-    else if (isTipVisible)
+    else
     {
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
+        finalSample = float3(halfTipTranslation, 0.0f);
 #endif
     }
-    else
+    /*else
     {
         float2 velocityAdvection = currMotionUnprojected[currentPixelIndex];
 
@@ -135,7 +141,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #ifdef DEBUG_COLORS
         finalSample = debugCyan;
 #endif
-    }
+    }*/
+    //finalSample = float3(currMotionUnprojected[currentPixelIndex], 0.0f);
     
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
@@ -143,7 +150,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
             float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
-            outputTexture[currentPixelIndex] = float4(tipSample, 1.0f);
+            outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
             //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
             //outputTexture[currentPixelIndex] = float4(velocityTopCombined, velocityTipCombined) * 10.0f;
         }

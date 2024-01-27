@@ -1043,10 +1043,11 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMevcFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv};
-    g_pContext->CSSetShaderResources(0, 8, ppSrvs);
+    g_pContext->CSSetShaderResources(0, 9, ppSrvs);
 
     g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
 
@@ -1062,8 +1063,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
 
     ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
     g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
-    ID3D11ShaderResourceView* emptySrvs[8] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 8, emptySrvs);
+    ID3D11ShaderResourceView* emptySrvs[9] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 9, emptySrvs);
 }
 
 void RunAlgo(uint32_t frameIndex, uint32_t total)
@@ -1101,10 +1102,10 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)],
                           InternalResourceList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)],
-                          3);
+                          0);
         AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)],
                           InternalResourceList[static_cast<uint32_t>(InternalResType::PrevMevcFiltered)],
-                          3);
+                          0);
 
         {
             // Reprojection
@@ -1135,18 +1136,20 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             // Push Pull Pass
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedFull)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedFullFiltered)],
-                              1);
+                              0);
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)],
-                              1);
+                              0);
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)],
-                              1);
+                              0);
         }
 
         {
             // Resolution
             ResolutionConstParamStruct cb = {};
+            memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
+            memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
             memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
             memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));

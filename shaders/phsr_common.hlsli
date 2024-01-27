@@ -145,7 +145,7 @@ float2 ComputeStaticVelocityTipTop(float2 ScreenPos, float DeviceZ, float4x4 Top
     float3 PosN = float3(ScreenPos, DeviceZ);
 
     float4 ThisClip = float4(PosN, 1);
-    float4 PrevClip = mul(ThisClip, TopClipToTipClip);
+    float4 PrevClip = mul(TopClipToTipClip, ThisClip);
     float2 PrevScreen = PrevClip.xy / PrevClip.w;
     return float2(PosN.xy - PrevScreen);
 }
@@ -155,7 +155,7 @@ float2 ComputeStaticVelocityTopTip(float2 ScreenPos, float DeviceZPrev, float4x4
     float3 PosN = float3(ScreenPos, DeviceZPrev);
 
     float4 PrevClip = float4(PosN, 1);
-    float4 ThisClip = mul(PrevClip, TipClipToTopClip);
+    float4 ThisClip = mul(TipClipToTopClip, PrevClip);
     float2 ThisScreen = ThisClip.xy / ThisClip.w;
     return float2(ThisScreen - PosN.xy);
 }
