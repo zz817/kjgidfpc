@@ -97,7 +97,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = topSample;
 #ifdef DEBUG_COLORS
         finalSample = debugRed;
-        finalSample = float3(halfTopTranslation, 0.0f);
+        //finalSample = float3(halfTopTranslation, 0.0f);
 #endif
     }
     /*else if (isTopVisible)
@@ -112,7 +112,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
-        finalSample = float3(halfTipTranslation, 0.0f);
+        //finalSample = float3(halfTipTranslation, 0.0f);
 #endif
     }
     /*else
@@ -142,7 +142,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = debugCyan;
 #endif
     }*/
-    //finalSample = float3(currMotionUnprojected[currentPixelIndex], 0.0f);
     
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
