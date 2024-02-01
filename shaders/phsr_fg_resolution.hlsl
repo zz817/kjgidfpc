@@ -49,15 +49,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 pixelCenter = float2(currentPixelIndex) + 0.5f;
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
-    
-    float2 velocityFull = motionReprojectedFull[currentPixelIndex];
+   
     float2 velocityHalfTip = motionReprojectedHalfTip[currentPixelIndex];
     float2 velocityHalfTop = motionReprojectedHalfTop[currentPixelIndex];
-
-    bool isFullWritten = all(abs(velocityFull) < viewportInv) ? false : true;
-    bool isHalfTipWritten = all(abs(velocityHalfTip) < viewportInv) ? false : true;
-    bool isHalfTopWritten = all(abs(velocityHalfTop) < viewportInv) ? false : true;
-
+    
     bool isTopInvisible = any(velocityHalfTop >= ImpossibleMotionValue) ? true : false;
     bool isTopVisible = !isTopInvisible;
     if (isTopInvisible)
@@ -71,7 +66,46 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         velocityHalfTip -= float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
     }
-	
+    
+    float2 velocityProxTip = 0.0f;
+    float2 velocityProxTop = 0.0f;
+    bool isProxTopVisible = false;
+    bool isProxTipVisible = false;
+    float proxTipNorm = 0.0f;
+    float proxTopNorm = 0.0f;
+    for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
+    {
+        int2 pixelPatchIndex = currentPixelIndex + subsamplePixelOffset9PointPatch[patchIndex];
+        
+        float2 velocityProxTipElement = motionReprojectedHalfTip[pixelPatchIndex];
+        float2 velocityProxTopElement = motionReprojectedHalfTop[pixelPatchIndex];
+        
+        bool isViableProxTop = any(velocityProxTopElement >= ImpossibleMotionValue) ? false : true;
+        bool isViableProxTip = any(velocityProxTipElement >= ImpossibleMotionValue) ? false : true;
+        
+        if (isViableProxTop)
+        {
+            velocityProxTop = velocityProxTopElement;
+            isProxTopVisible = true;
+        }
+        if (isViableProxTip)
+        {
+            velocityProxTip = velocityProxTipElement;
+            isProxTipVisible = true;
+        }
+    }
+    
+    if (isTopInvisible && isProxTopVisible)
+    {
+        isTopVisible = true;
+        velocityHalfTop = velocityProxTop;
+    }
+    if (isTipInvisible && isProxTipVisible)
+    {
+        isTipVisible = true;
+        velocityHalfTip = velocityProxTip;
+    }
+
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 

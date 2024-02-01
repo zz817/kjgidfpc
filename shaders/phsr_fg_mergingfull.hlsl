@@ -50,16 +50,15 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 halfTipIndex = int2(halfTipX & IndexLast13DigitsMask, halfTipY & IndexLast13DigitsMask);
     bool bIsHalfTipUnwritten = any(halfTipIndex == UnwrittenIndexIndicator);
     float prevDepthValue = prevDepthUnprojected[halfTipIndex];
-    float2 motionVectorHalfTip = -ComputeStaticVelocityTopTip((halfTipIndex + 0.5f) * viewportInv, prevDepthValue, prevClipToClip);
+    float2 motionVectorHalfTip = prevMotionUnprojected[halfTipIndex];
     float2 samplePosHalfTip = screenPos + motionVectorHalfTip * distanceHalfTip;
     float2 motionCaliberatedUVHalfTip = samplePosHalfTip;
     motionCaliberatedUVHalfTip = clamp(motionCaliberatedUVHalfTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float prevDepthValueCaliberated = prevDepthUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTip, 0);
-    float2 motionHalfTipCaliberated = -ComputeStaticVelocityTopTip(motionCaliberatedUVHalfTip, prevDepthValue, prevClipToClip);
-    /*if (bIsHalfTipUnwritten)
+    float2 motionHalfTipCaliberated = prevMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTip, 0);
+    if (bIsHalfTipUnwritten)
     {
         motionHalfTipCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-    }*/
+    }
 
     uint fullX = motionReprojFullX[currentPixelIndex];
     uint fullY = motionReprojFullY[currentPixelIndex];
