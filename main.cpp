@@ -937,57 +937,57 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     ppParameters.becomeCoarser();
     // Pulling
     // 1->2
-    AddPushPass(1, ppParameters);
+    AddPullPass(1, ppParameters);
     
     ppParameters.becomeCoarser();
     // Pulling
     // 2->3
-    AddPushPass(2, ppParameters);
+    AddPullPass(2, ppParameters);
 
     ppParameters.becomeCoarser();
     // Pulling
     // 3->4
-    AddPushPass(3, ppParameters);
+    AddPullPass(3, ppParameters);
 
     ppParameters.becomeCoarser();
     // Pulling
     // 4->5
-    AddPushPass(4, ppParameters);
+    AddPullPass(4, ppParameters);
 
     ppParameters.becomeCoarser();
     // Pulling
     // 5->6
-    AddPushPass(5, ppParameters);
+    AddPullPass(5, ppParameters);
 
     ppParameters.becomeCoarser();
     // Pulling
     // 6->7
-    AddPushPass(6, ppParameters);
+    AddPullPass(6, ppParameters);
 
     // Pushing
     ppParameters.becomeFiner();
     // 7->6
-    AddPullPass(6, ppParameters);
+    AddPushPass(6, ppParameters);
 
     ppParameters.becomeFiner();
     // 6->5
-    AddPullPass(5, ppParameters);
+    AddPushPass(5, ppParameters);
 
     ppParameters.becomeFiner();
     // 5->4
-    AddPullPass(4, ppParameters);
+    AddPushPass(4, ppParameters);
 
     ppParameters.becomeFiner();
     // 4->3
-    AddPullPass(3, ppParameters);
+    AddPushPass(3, ppParameters);
 
     ppParameters.becomeFiner();
     // 3->2
-    AddPullPass(2, ppParameters);
+    AddPushPass(2, ppParameters);
 
     ppParameters.becomeFiner();
     // 2->1
-    AddPullPass(1, ppParameters);
+    AddPushPass(1, ppParameters);
 
     // Last stretch
     // 1->0

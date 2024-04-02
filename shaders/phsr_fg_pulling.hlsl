@@ -26,18 +26,30 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
     float2 filteredVector = 0.0f;
     float perPixelWeight = 0.0f;
+    float validSamples = 0.0f;
     {
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
             int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
             float2 finerVector = motionVectorFiner[finerIndex];
-            float finerWeight = motionReliabilityFiner[finerIndex];
-            filteredVector += finerVector * finerWeight;
-            perPixelWeight += finerWeight;
+ 
+            if (all(finerVector < ImpossibleMotionValue))
+            {
+                filteredVector += finerVector;
+                validSamples += 1.0f;
+            }
         }
-        float normalization = SafeRcp(float(subsampleCount4PointTian));
-        filteredVector *= normalization;
-        perPixelWeight *= normalization;
+        if (validSamples == 0.0f)
+        {
+            filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+            perPixelWeight = 0.0f;
+        }
+        else
+        {
+            float perPixelWeight = validSamples * SafeRcp(float(subsampleCount4PointTian));
+            float normalization = SafeRcp(validSamples);
+            filteredVector *= normalization;
+        }
     }
     
     {

@@ -25,28 +25,30 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
     float2 filteredVector = 0.0f;
     float perPixelWeight = 0.0f;
+    float validSamples = 0.0f;
     {
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
             int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
             float2 finerVector = motionVectorFiner[finerIndex];
-            float validity = all(abs(finerVector) < (1.0f / float2(FinerDimension))) ? 0.0f : 1.0f;
-            if (any(finerVector >= ImpossibleMotionValue))
+ 
+            if (all(finerVector < ImpossibleMotionValue))
             {
-                validity = 0.0f;
-                finerVector -= float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+                filteredVector += finerVector;
+                validSamples += 1.0f;
             }
-            if (all(abs(finerVector) < (1.0f / float2(FinerDimension))))
-            {
-                validity = 0.0f;
-                finerVector = float2(0.0f, 0.0f);
-            }
-            filteredVector += finerVector;
-            perPixelWeight += validity;
         }
-        float normalization = SafeRcp(float(subsampleCount4PointTian));
-        filteredVector *= normalization;
-        perPixelWeight *= normalization;
+        if (validSamples == 0.0f)
+        {
+            filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+            perPixelWeight = 0.0f;
+        }
+        else
+        {
+            float perPixelWeight = validSamples * SafeRcp(float(subsampleCount4PointTian));
+            float normalization = SafeRcp(validSamples);
+            filteredVector *= normalization;
+        }
     }
     
     {
