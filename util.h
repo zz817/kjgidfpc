@@ -11,7 +11,7 @@ enum class ComputeShaderType : uint32_t {
   Normalizing,
   Reprojection,
   MergeHalf,
-  MergeFull,
+  //MergeFull,
   FirstLeg,
   Pull,
   LastStretch,
