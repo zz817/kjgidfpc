@@ -127,9 +127,9 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             //float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
             //float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
-            outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
+            //outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
             //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
-            //outputTexture[currentPixelIndex] = float4(velocityTopCombined, velocityTipCombined) * 10.0f;
+            outputTexture[currentPixelIndex] = float4(abs(velocityHalfPyr), 0.0f, 1.0f);
         }
     }
 }

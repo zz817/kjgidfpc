@@ -60,7 +60,7 @@ enum class InternalResType : uint32_t {
 
   //MotionVectorFullLv0,
   //MotionVectorTipLv0,
-  MotionVectorTopLv0,
+  //MotionVectorTopLv0,
 
   MotionVectorLv1,
   MotionVectorLv2,
@@ -156,7 +156,7 @@ struct MergeParamStruct {
 struct PushPullParameters {
   uint32_t FinerDimension[2];
   uint32_t CoarserDimension[2];
-  void     becomeCoarser()
+  void becomeCoarser()
   {
       FinerDimension[0] = CoarserDimension[0];
       FinerDimension[1] = CoarserDimension[1];
@@ -222,7 +222,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::PrevMvecDuplicated:
     //case InternalResType::MotionVectorFullLv0:
     //case InternalResType::MotionVectorTipLv0:
-    case InternalResType::MotionVectorTopLv0:
+    //case InternalResType::MotionVectorTopLv0:
     case InternalResType::MotionVectorLv1:
     case InternalResType::MotionVectorLv2:
     case InternalResType::MotionVectorLv3:
@@ -275,7 +275,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PrevMvecDuplicated:
     //case InternalResType::MotionVectorFullLv0:
     //case InternalResType::MotionVectorTipLv0:
-    case InternalResType::MotionVectorTopLv0:
+    //case InternalResType::MotionVectorTopLv0:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
