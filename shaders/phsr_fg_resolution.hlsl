@@ -83,6 +83,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     
     float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
+    if (any(velocityHalfPyr >= ImpossibleMotionValue))
+    {
+        velocityHalfPyr = 0.0f;
+    }
     
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
