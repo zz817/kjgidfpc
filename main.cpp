@@ -1030,12 +1030,14 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMevcFiltered)].srv,
+        //InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMevcFiltered)].srv,
+        //InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMevcFiltered)].srv,
         //InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullFiltered)].srv,
         //InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv};
-    g_pContext->CSSetShaderResources(0, 7, ppSrvs);
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv
+    };
+    g_pContext->CSSetShaderResources(0, 6, ppSrvs);
 
     g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
 

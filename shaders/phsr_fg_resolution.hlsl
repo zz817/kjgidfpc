@@ -5,12 +5,13 @@ Texture2D<float> depthTextureTip;
 Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
-Texture2D<float2> currMotionUnprojected;
-Texture2D<float2> prevMotionUnprojected;
+//Texture2D<float2> currMotionUnprojected;
+//Texture2D<float2> prevMotionUnprojected;
 
-Texture2D<float2> motionReprojectedHalfTop;
+Texture2D<float2> motionReprojectedHalfTopPyr;
+Texture2D<float2> motionReprojectedHalfTopRaw;
 
-Texture2D<float4> uiColorTexture;
+//Texture2D<float4> uiColorTexture;
 
 RWTexture2D<float4> outputTexture;
 
@@ -48,26 +49,46 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
 
-    float2 velocityHalf = motionReprojectedHalfTop[currentPixelIndex];
-    
-    bool isTopInvisible = any(velocityHalf >= ImpossibleMotionValue) ? true : false;
+    float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
+    bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionValue) ? true : false;
     bool isTopVisible = !isTopInvisible;
-    if (isTopInvisible)
+    
+    float2 velocityProx = 0.0f;
+    bool isProxTopVisible = false;
+    float proxTopNorm = 0.0f;
+    for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
     {
-        velocityHalf -= float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+        int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
+        int2 pixelPatchIndex = currentPixelIndex + offset;
+        float2 velocityProxTopElement = motionReprojectedHalfTopRaw[pixelPatchIndex];
+        bool isViableProxTop = any(velocityProxTopElement >= ImpossibleMotionValue) ? false : true;
+        if (isViableProxTop)
+        {
+            float weight = gaussianDistributionWeightForVariance(offset, 3);
+            velocityProx += velocityProxTopElement * weight;
+            proxTopNorm += 1.0f * weight;
+            isProxTopVisible = true;
+        }
     }
-
-    if (isTopInvisible && isProxTopVisible)
+    
+    if (isProxTopVisible)
     {
-        isTopVisible = true;
-        velocityHalf = velocityProxTop;
+        velocityProx *= SafeRcp(proxTopNorm);
+        if (isTopInvisible)
+        {
+            velocityHalfRaw = velocityProx;
+            isTopInvisible = false;
+            isTopVisible = true;
+        }
     }
+    
+    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
     
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
-    float2 halfTipTranslation = distanceTip * velocityHalf;
-    float2 halfTopTranslation = distanceTop * velocityHalf;
+    float2 halfTipTranslation = distanceTip * velocityHalfPyr;
+    float2 halfTopTranslation = distanceTop * velocityHalfRaw;
 
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
@@ -104,8 +125,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
-            float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
+            //float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
+            //float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
             outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
             //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
             //outputTexture[currentPixelIndex] = float4(velocityTopCombined, velocityTipCombined) * 10.0f;

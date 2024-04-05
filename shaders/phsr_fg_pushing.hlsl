@@ -28,14 +28,16 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float finerReliability = motionReliabilityFiner[finerPixelIndex];
     float coarserReliability = motionReliabilityCoarser[coarserPixelIndex];
     
+    float2 unpushedVector = motionVectorFiner[finerPixelIndex];
+    float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];
     float2 selectedVector = 0.0f;
-    if (finerReliability == 0.0f)
+    if (any(unpushedVector >= ImpossibleMotionValue))
     {
-        selectedVector = motionVectorCoarser[coarserPixelIndex];
+        selectedVector = fetchedVector;
     }
     else
     {
-        selectedVector = motionVectorFiner[finerPixelIndex];
+        selectedVector = unpushedVector;
     }
     
     {
