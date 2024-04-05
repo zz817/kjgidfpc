@@ -3,8 +3,8 @@
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCoarser;
-Texture2D<float> motionReliabilityFiner;
-Texture2D<float> motionReliabilityCoarser;
+//Texture2D<float> motionReliabilityFiner;
+//Texture2D<float> motionReliabilityCoarser;
 
 RWTexture2D<float2> motionVectorFinerUAV;
 
@@ -25,8 +25,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 finerPixelIndex = dispatchThreadId;
     int2 coarserPixelIndex = finerPixelIndex / 2;
     
-    float finerReliability = motionReliabilityFiner[finerPixelIndex];
-    float coarserReliability = motionReliabilityCoarser[coarserPixelIndex];
+    //float finerReliability = motionReliabilityFiner[finerPixelIndex];
+    //float coarserReliability = motionReliabilityCoarser[coarserPixelIndex];
     
     float2 unpushedVector = motionVectorFiner[finerPixelIndex];
     float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];

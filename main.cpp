@@ -851,6 +851,8 @@ void AddPullPass(const int coarserLayer, const PushPullParameters& ppParameters)
     }
 }
 
+static const int totalLayers = 7;
+
 void AddPushPass(const int coarserLayer, const PushPullParameters& ppParameters)
 {
     ID3D11Buffer* buf        = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)];
@@ -859,16 +861,19 @@ void AddPushPass(const int coarserLayer, const PushPullParameters& ppParameters)
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Push)], nullptr, 0);
 
         ID3D11ShaderResourceView* ppSrvs[] = {
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + finerLayer].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + coarserLayer].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv1) + finerLayer].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv1) + coarserLayer].srv};
-        if (coarserLayer == 6)
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + finerLayer].srv, nullptr};
+            //InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv1) + finerLayer].srv,
+            //InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv1) + coarserLayer].srv};
+        if (coarserLayer == totalLayers - 1)
         {
-            ppSrvs[0] = nullptr;
-            ppSrvs[1] = nullptr;
+            //ppSrvs[0] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + finerLayer].srv;
+            ppSrvs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + coarserLayer].srv;
         }
-        g_pContext->CSSetShaderResources(0, 4, ppSrvs);
+        else
+        {
+            ppSrvs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1) + coarserLayer].srv;
+        }
+        g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
         g_pContext->CSSetUnorderedAccessViews(
             0,
@@ -889,8 +894,43 @@ void AddPushPass(const int coarserLayer, const PushPullParameters& ppParameters)
 
         ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
         g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
-        ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
-        g_pContext->CSSetShaderResources(0, 4, emptySrvs);
+        ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
+        g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+    }
+}
+
+void CopyLayers(const int layer, const PushPullParameters& ppParameters)
+{
+    ID3D11Buffer* buf        = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)];
+    {
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::MergeFull)], nullptr, 0);
+
+        g_pContext->CSSetShaderResources(
+            0,
+            1,
+            &InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + layer - 1].srv);
+
+        g_pContext->CSSetUnorderedAccessViews(
+            0,
+            1,
+            &InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1) + layer - 1].uav,
+            nullptr);
+
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+        g_pContext->Unmap(buf, 0);
+        g_pContext->CSSetConstantBuffers(0, 1, &buf);
+
+        uint32_t grid[] = {(ppParameters.FinerDimension[0] + 8 - 1) / 8,
+                           (ppParameters.FinerDimension[1] + 8 - 1) / 8,
+                           1};
+        g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+        ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[1] = {nullptr};
+        g_pContext->CSSetShaderResources(0, 1, emptySrvs);
     }
 }
 
@@ -998,11 +1038,10 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     {
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::LastStretch)], nullptr, 0);
 
-        ID3D11ShaderResourceView* ppSrvs[] = {
-            ResourceViewMap[pInput].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReliabilityLv1)].srv};
-        g_pContext->CSSetShaderResources(0, 3, ppSrvs);
+        ID3D11ShaderResourceView* ppSrvs[] =
+            {ResourceViewMap[pInput].srv,
+             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv};
+        g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
         g_pContext->CSSetUnorderedAccessViews(0, 1, &ResourceViewMap[pOutput].uav, nullptr);
 
@@ -1019,8 +1058,8 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
 
         ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
         g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
-        ID3D11ShaderResourceView* emptySrvs[3] = { nullptr };
-        g_pContext->CSSetShaderResources(0, 3, emptySrvs);
+        ID3D11ShaderResourceView* emptySrvs[2] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
 }
 
