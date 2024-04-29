@@ -1112,6 +1112,24 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         g_constBufData.tipTopDistance[0] = tipDistance;
         g_constBufData.tipTopDistance[1] = topDistance;
 
+        ID3D11Query* startQuery = nullptr;
+        ID3D11Query* endQuery   = nullptr;
+        ID3D11Query* disjointQuery;
+
+        D3D11_QUERY_DESC timestampDesc;
+        timestampDesc.Query     = D3D11_QUERY_TIMESTAMP;
+        timestampDesc.MiscFlags = 0;
+
+        D3D11_QUERY_DESC disjointDesc;
+        disjointDesc.Query     = D3D11_QUERY_TIMESTAMP_DISJOINT;
+        disjointDesc.MiscFlags = 0;
+
+        // Create the queries
+        g_pDevice->CreateQuery(&timestampDesc, &startQuery);
+        g_pDevice->CreateQuery(&timestampDesc, &endQuery);
+        g_pDevice->CreateQuery(&disjointDesc, &disjointQuery);
+        g_pContext->Begin(disjointQuery);
+        g_pContext->End(startQuery);
         {
             // Clearing
             ClearingConstParamStruct cb = {};
@@ -1174,6 +1192,31 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
             ProcessFrameGenerationResolution(&cb, grid);
+        }
+        g_pContext->End(endQuery);
+        g_pContext->End(disjointQuery);
+
+        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
+        UINT64                              startTime = 0;
+        UINT64                              endTime   = 0;
+
+        // Ensure the disjoint query is done
+        while (g_pContext->GetData(disjointQuery, &disjointData, sizeof(disjointData), 0) != S_OK)
+            ;
+        if (disjointData.Disjoint)
+        {
+            std::cout << "Time period was disjoint; results are not reliable.\n";
+        }
+        else
+        {
+            // Get data from the timestamp queries
+            while (g_pContext->GetData(startQuery, &startTime, sizeof(startTime), 0) != S_OK)
+                ;
+            while (g_pContext->GetData(endQuery, &endTime, sizeof(endTime), 0) != S_OK)
+                ;
+
+            double timeInMs = (endTime - startTime) * 1000.0 / disjointData.Frequency;
+            std::cout << "Elapsed time: " << timeInMs << " ms\n";
         }
     }
 
