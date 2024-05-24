@@ -61,25 +61,24 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
                 totalVotes += 1.0f;
             }
         }
+        totalVotes = 1.0f;
         if (totalVotes > 0.0f)
         {
             float normalizationFactor = SafeRcp(totalVotes);
             votedDepth = votedDepth * normalizationFactor;
-            if ((abs(votedDepth - fetchedFinerDepth) * SafeRcp(votedDepth)) < 10.25f)
+            //if ((abs(votedDepth - fetchedFinerDepth) * SafeRcp(votedDepth)) < 10.25f)
             {
                 selectedVector = fetchedVector;
             }
-            else
+            //else
             {
-                selectedVector = unpushedVector;
+                //selectedVector = unpushedVector;
             }
         }
-        else
+        //else
         {
-            selectedVector = unpushedVector;
+            //selectedVector = unpushedVector;
         }
-        
-        selectedVector = fetchedVector;
     }
     else
     {

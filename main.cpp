@@ -796,8 +796,8 @@ void AddPullPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
                            1};
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-        ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+        ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
+        g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
         ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
         g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
@@ -852,8 +852,8 @@ void AddPushPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
                            1};
         g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-        ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+        ID3D11UnorderedAccessView* emptyUavs[4] = {nullptr};
+        g_pContext->CSSetUnorderedAccessViews(0, 4, emptyUavs, nullptr);
         ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
         g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
@@ -943,8 +943,8 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
 
         ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
         g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
-        ID3D11ShaderResourceView* emptySrvs[1] = { nullptr };
-        g_pContext->CSSetShaderResources(0, 1, emptySrvs);
+        ID3D11ShaderResourceView* emptySrvs[2] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
 
     ppParameters.becomeCoarser();
@@ -1007,10 +1007,13 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     {
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::LastStretch)], nullptr, 0);
 
-        ID3D11ShaderResourceView* ppSrvs[] =
-            {ResourceViewMap[pInput].srv,
-             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv};
-        g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+        ID3D11ShaderResourceView* ppSrvs[] = {
+            ResourceViewMap[pInput].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv,
+            InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedDepthLv1)].srv
+        };
+        g_pContext->CSSetShaderResources(0, 4, ppSrvs);
 
         g_pContext->CSSetUnorderedAccessViews(0, 1, &ResourceViewMap[pOutput].uav, nullptr);
 
