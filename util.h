@@ -39,28 +39,16 @@ enum class InputResType : uint32_t {
 };
 
 enum class InternalResType : uint32_t {
-  //ReprojectedFullX,
-  //ReprojectedFullY,
-  //ReprojectedHalfTipX,
-  //ReprojectedHalfTipY,
   ReprojectedHalfTopX,
   ReprojectedHalfTopY,
 
-  //ReprojectedFull,
-  //ReprojectedHalfTip,
   ReprojectedHalfTop,
-  //ReprojectedFullFiltered,
-  //ReprojectedHalfTipFiltered,
   ReprojectedHalfTopFiltered,
 
   CurrMevcFiltered,
   PrevMevcFiltered,
   CurrMvecDuplicated,
   PrevMvecDuplicated,
-
-  //MotionVectorFullLv0,
-  //MotionVectorTipLv0,
-  //MotionVectorTopLv0,
 
   MotionVectorLv1,
   MotionVectorLv2,
@@ -70,13 +58,13 @@ enum class InternalResType : uint32_t {
   MotionVectorLv6,
   MotionVectorLv7,
 
-  ReliabilityLv1,
-  ReliabilityLv2,
-  ReliabilityLv3,
-  ReliabilityLv4,
-  ReliabilityLv5,
-  ReliabilityLv6,
-  ReliabilityLv7,
+  InpaintedDepthLv1,
+  InpaintedDepthLv2,
+  InpaintedDepthLv3,
+  InpaintedDepthLv4,
+  InpaintedDepthLv5,
+  InpaintedDepthLv6,
+  InpaintedDepthLv7,
 
   PushedVectorLv1,
   PushedVectorLv2,
@@ -84,6 +72,13 @@ enum class InternalResType : uint32_t {
   PushedVectorLv4,
   PushedVectorLv5,
   PushedVectorLv6,
+
+  PushedDepthLv1,
+  PushedDepthLv2,
+  PushedDepthLv3,
+  PushedDepthLv4,
+  PushedDepthLv5,
+  PushedDepthLv6,
 
   Count
 };
@@ -153,22 +148,31 @@ struct MergeParamStruct {
   float viewportInv[2];
 };
 
-struct PushPullParameters {
+struct PyramidParamStruct {
   uint32_t FinerDimension[2];
   uint32_t CoarserDimension[2];
+  float tipTopDistance[2];
+  float viewportInv[2];
+
   void becomeCoarser()
   {
-      FinerDimension[0] = CoarserDimension[0];
-      FinerDimension[1] = CoarserDimension[1];
-      CoarserDimension[0] /= 2;
-      CoarserDimension[1] /= 2;
+    FinerDimension[0] = CoarserDimension[0];
+    FinerDimension[1] = CoarserDimension[1];
+    CoarserDimension[0] /= 2;
+    CoarserDimension[1] /= 2;
+
+    viewportInv[0] *= 2.0f;
+    viewportInv[1] *= 2.0f;
   };
   void becomeFiner()
   {
-      CoarserDimension[0] = FinerDimension[0];
-      CoarserDimension[1] = FinerDimension[1];
-      FinerDimension[0] *= 2;
-      FinerDimension[1] *= 2;
+    CoarserDimension[0] = FinerDimension[0];
+    CoarserDimension[1] = FinerDimension[1];
+    FinerDimension[0] *= 2;
+    FinerDimension[1] *= 2;
+
+    viewportInv[0] *= 0.5f;
+    viewportInv[1] *= 0.5f;
   };
 };
 
@@ -202,27 +206,16 @@ std::vector<uint8_t> AcquireFileContent(const std::string& path) {
 
 DXGI_FORMAT GetInternalResFormat(InternalResType type) {
   switch (type) {
-    //case InternalResType::ReprojectedFullX:
-    //case InternalResType::ReprojectedFullY:
-    //case InternalResType::ReprojectedHalfTipX:
-    //case InternalResType::ReprojectedHalfTipY:
     case InternalResType::ReprojectedHalfTopX:
     case InternalResType::ReprojectedHalfTopY:
       return DXGI_FORMAT_R32_UINT;
 
-    //case InternalResType::ReprojectedFull:
-    //case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTop:
-    //case InternalResType::ReprojectedFullFiltered:
-    //case InternalResType::ReprojectedHalfTipFiltered:
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDuplicated:
     case InternalResType::PrevMvecDuplicated:
-    //case InternalResType::MotionVectorFullLv0:
-    //case InternalResType::MotionVectorTipLv0:
-    //case InternalResType::MotionVectorTopLv0:
     case InternalResType::MotionVectorLv1:
     case InternalResType::MotionVectorLv2:
     case InternalResType::MotionVectorLv3:
@@ -238,13 +231,19 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::PushedVectorLv6:
       return DXGI_FORMAT_R32G32_FLOAT;
 
-    case InternalResType::ReliabilityLv1:
-    case InternalResType::ReliabilityLv2:
-    case InternalResType::ReliabilityLv3:
-    case InternalResType::ReliabilityLv4:
-    case InternalResType::ReliabilityLv5:
-    case InternalResType::ReliabilityLv6:
-    case InternalResType::ReliabilityLv7:
+    case InternalResType::InpaintedDepthLv1:
+    case InternalResType::InpaintedDepthLv2:
+    case InternalResType::InpaintedDepthLv3:
+    case InternalResType::InpaintedDepthLv4:
+    case InternalResType::InpaintedDepthLv5:
+    case InternalResType::InpaintedDepthLv6:
+    case InternalResType::InpaintedDepthLv7:
+    case InternalResType::PushedDepthLv1:
+    case InternalResType::PushedDepthLv2:
+    case InternalResType::PushedDepthLv3:
+    case InternalResType::PushedDepthLv4:
+	case InternalResType::PushedDepthLv5:
+	case InternalResType::PushedDepthLv6:
       return DXGI_FORMAT_R32_FLOAT;
 
     case InternalResType::Count:
@@ -257,59 +256,54 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
                                                        uint32_t originWidth,
                                                        uint32_t originHeight) {
   switch (type) {
-    //case InternalResType::ReprojectedFullX:
-    //case InternalResType::ReprojectedFullY:
-    //case InternalResType::ReprojectedHalfTipX:
-    //case InternalResType::ReprojectedHalfTipY:
     case InternalResType::ReprojectedHalfTopX:
     case InternalResType::ReprojectedHalfTopY:
-    //case InternalResType::ReprojectedFull:
-    //case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTop:
-    //case InternalResType::ReprojectedFullFiltered:
-    //case InternalResType::ReprojectedHalfTipFiltered:
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDuplicated:
     case InternalResType::PrevMvecDuplicated:
-    //case InternalResType::MotionVectorFullLv0:
-    //case InternalResType::MotionVectorTipLv0:
-    //case InternalResType::MotionVectorTopLv0:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
-    case InternalResType::ReliabilityLv1:
+    case InternalResType::InpaintedDepthLv1:
     case InternalResType::PushedVectorLv1:
+    case InternalResType::PushedDepthLv1:
       return {originWidth / 2, originHeight / 2};
 
     case InternalResType::MotionVectorLv2:
-    case InternalResType::ReliabilityLv2:
+    case InternalResType::InpaintedDepthLv2:
     case InternalResType::PushedVectorLv2:
+    case InternalResType::PushedDepthLv2:
       return {originWidth / 4, originHeight / 4};
 
     case InternalResType::MotionVectorLv3:
-    case InternalResType::ReliabilityLv3:
+    case InternalResType::InpaintedDepthLv3:
     case InternalResType::PushedVectorLv3:
+    case InternalResType::PushedDepthLv3:
       return {originWidth / 8, originHeight / 8};
 
     case InternalResType::MotionVectorLv4:
-    case InternalResType::ReliabilityLv4:
+    case InternalResType::InpaintedDepthLv4:
     case InternalResType::PushedVectorLv4:
+    case InternalResType::PushedDepthLv4:
 	  return {originWidth / 16, originHeight / 16};
 
     case InternalResType::MotionVectorLv5:
-    case InternalResType::ReliabilityLv5:
+    case InternalResType::InpaintedDepthLv5:
     case InternalResType::PushedVectorLv5:
+    case InternalResType::PushedDepthLv5:
       return {originWidth / 32, originHeight / 32};
 
     case InternalResType::MotionVectorLv6:
-    case InternalResType::ReliabilityLv6:
+    case InternalResType::InpaintedDepthLv6:
     case InternalResType::PushedVectorLv6:
+    case InternalResType::PushedDepthLv6:
       return {originWidth / 64, originHeight / 64};
 
     case InternalResType::MotionVectorLv7:
-    case InternalResType::ReliabilityLv7:
+    case InternalResType::InpaintedDepthLv7:
       return {originWidth / 128, originHeight / 128};
 
     case InternalResType::Count:
