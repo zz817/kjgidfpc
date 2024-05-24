@@ -76,9 +76,9 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
                 //selectedVector = unpushedVector;
             }
         }
-        //else
+        else
         {
-            //selectedVector = unpushedVector;
+            selectedVector = unpushedVector;
         }
     }
     else
