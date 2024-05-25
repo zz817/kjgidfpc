@@ -17,6 +17,9 @@ enum class ComputeShaderType : uint32_t {
   LastStretch,
   Push,
   Resolution,
+  AxPb,
+  Multiply,
+  InnerProduct,
   Count
 };
 

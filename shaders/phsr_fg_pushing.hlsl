@@ -50,7 +50,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float votedDepth = 0.0f;
     if (any(unpushedVector >= ImpossibleMotionValue))
     {
-        float totalVotes = 0.0f;
+        /*float totalVotes = 0.0f;
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
             int2 elementIndex = finerPixelIndex + subsamplePixelOffset9PointPatch[i];
@@ -79,7 +79,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         else
         {
             selectedVector = unpushedVector;
-        }
+        }*/
+        selectedVector = fetchedVector;
     }
     else
     {

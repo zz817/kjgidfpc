@@ -5,9 +5,6 @@ Texture2D<float> depthTextureTip;
 Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
-//Texture2D<float2> currMotionUnprojected;
-//Texture2D<float2> prevMotionUnprojected;
-
 Texture2D<float2> motionReprojectedHalfTopPyr;
 Texture2D<float2> motionReprojectedHalfTopRaw;
 
@@ -93,19 +90,25 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 
     float2 halfTipTranslation = distanceTip * velocityHalfPyr;
     float2 halfTopTranslation = distanceTop * velocityHalfRaw;
+    float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
 
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
+    float2 spareTracedScreenPos = screenPos - halfTopSpareTrans;
 
     float2 sampleUVTip = tipTracedScreenPos;
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 sampleUVTop = topTracedScreenPos;
     sampleUVTop = clamp(sampleUVTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+    //float2 sampleUVSpare = spareTracedScreenPos;
+    //sampleUVSpare = clamp(sampleUVSpare, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
 	
     float3 tipSample = colorTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float3 topSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
     float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
+    //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
+    //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
 	
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
@@ -118,6 +121,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     else
     {
+        //finalSample = spareDepth < tipDepth ? spareSample : tipSample;
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
