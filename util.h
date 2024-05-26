@@ -83,6 +83,38 @@ enum class InternalResType : uint32_t {
   PushedDepthLv5,
   PushedDepthLv6,
 
+  CrB,
+  CrX,
+  CrR,
+  CrP,
+  CrAP,
+  CrMAp,
+  CrAr,
+
+  MgXLv1,
+  MgXLv2,
+  MgXLv3,
+  MgXLv4,
+  MgXLv5,
+  MgXLv6,
+  MgXLv7,
+
+  MgRLv1,
+  MgRLv2,
+  MgRLv3,
+  MgRLv4,
+  MgRLv5,
+  MgRLv6,
+  MgRLv7,
+
+  MgBLv1,
+  MgBLv2,
+  MgBLv3,
+  MgBLv4,
+  MgBLv5,
+  MgBLv6,
+  MgBLv7,
+
   Count
 };
 
@@ -249,6 +281,38 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::PushedDepthLv6:
       return DXGI_FORMAT_R32_FLOAT;
 
+    case InternalResType::CrB:
+    case InternalResType::CrX:
+    case InternalResType::CrR:
+    case InternalResType::CrP:
+    case InternalResType::CrAP:
+    case InternalResType::CrMAp:
+    case InternalResType::CrAr:
+      return DXGI_FORMAT_R32G32B32_FLOAT;
+
+	case InternalResType::MgXLv1:
+	case InternalResType::MgXLv2:
+	case InternalResType::MgXLv3:
+	case InternalResType::MgXLv4:
+	case InternalResType::MgXLv5:
+	case InternalResType::MgXLv6:
+	case InternalResType::MgXLv7:
+	case InternalResType::MgRLv1:
+	case InternalResType::MgRLv2:
+	case InternalResType::MgRLv3:
+	case InternalResType::MgRLv4:
+	case InternalResType::MgRLv5:
+	case InternalResType::MgRLv6:
+	case InternalResType::MgRLv7:
+    case InternalResType::MgBLv1:
+    case InternalResType::MgBLv2:
+    case InternalResType::MgBLv3:
+    case InternalResType::MgBLv4:
+	case InternalResType::MgBLv5:
+	case InternalResType::MgBLv6:
+	case InternalResType::MgBLv7:
+      return DXGI_FORMAT_R32G32B32_FLOAT;
+
     case InternalResType::Count:
     default:
       return DXGI_FORMAT_UNKNOWN;
@@ -267,46 +331,74 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDuplicated:
     case InternalResType::PrevMvecDuplicated:
+    case InternalResType::CrB:
+    case InternalResType::CrX:
+    case InternalResType::CrR:
+    case InternalResType::CrP:
+	case InternalResType::CrAP:
+	case InternalResType::CrMAp:
+	case InternalResType::CrAr:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::PushedVectorLv1:
     case InternalResType::PushedDepthLv1:
+    case InternalResType::MgXLv1:
+    case InternalResType::MgRLv1:
+    case InternalResType::MgBLv1:
       return {originWidth / 2, originHeight / 2};
 
     case InternalResType::MotionVectorLv2:
     case InternalResType::InpaintedDepthLv2:
     case InternalResType::PushedVectorLv2:
     case InternalResType::PushedDepthLv2:
+    case InternalResType::MgXLv2:
+    case InternalResType::MgRLv2:
+    case InternalResType::MgBLv2:
       return {originWidth / 4, originHeight / 4};
 
     case InternalResType::MotionVectorLv3:
     case InternalResType::InpaintedDepthLv3:
     case InternalResType::PushedVectorLv3:
     case InternalResType::PushedDepthLv3:
+    case InternalResType::MgXLv3:
+    case InternalResType::MgRLv3:
+    case InternalResType::MgBLv3:
       return {originWidth / 8, originHeight / 8};
 
     case InternalResType::MotionVectorLv4:
     case InternalResType::InpaintedDepthLv4:
     case InternalResType::PushedVectorLv4:
     case InternalResType::PushedDepthLv4:
+    case InternalResType::MgXLv4:
+    case InternalResType::MgRLv4:
+    case InternalResType::MgBLv4:
 	  return {originWidth / 16, originHeight / 16};
 
     case InternalResType::MotionVectorLv5:
     case InternalResType::InpaintedDepthLv5:
     case InternalResType::PushedVectorLv5:
     case InternalResType::PushedDepthLv5:
+    case InternalResType::MgXLv5:
+    case InternalResType::MgRLv5:
+    case InternalResType::MgBLv5:
       return {originWidth / 32, originHeight / 32};
 
     case InternalResType::MotionVectorLv6:
     case InternalResType::InpaintedDepthLv6:
     case InternalResType::PushedVectorLv6:
     case InternalResType::PushedDepthLv6:
+    case InternalResType::MgXLv6:
+    case InternalResType::MgRLv6:
+    case InternalResType::MgBLv6:
       return {originWidth / 64, originHeight / 64};
 
     case InternalResType::MotionVectorLv7:
     case InternalResType::InpaintedDepthLv7:
+    case InternalResType::MgXLv7:
+    case InternalResType::MgRLv7:
+    case InternalResType::MgBLv7:
       return {originWidth / 128, originHeight / 128};
 
     case InternalResType::Count:

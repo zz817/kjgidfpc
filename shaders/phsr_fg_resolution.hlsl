@@ -10,11 +10,8 @@ Texture2D<float2> motionReprojectedHalfTopRaw;
 
 //Texture2D<float4> uiColorTexture;
 
-RWTexture2D<float4> outputTexture;
-RWTexture2D<float3> colorGradXTip;
-RWTexture2D<float3> colorGradYTip;
-RWTexture2D<float3> colorGradXTop;
-RWTexture2D<float3> colorGradYTop;
+RWTexture2D<float3> outputInit;
+RWTexture2D<float3> outputRhs;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -72,7 +69,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             viableProxCount += 1.0f;
         }
     }
-    if (viableProxCount > 0.5f * float(subsampleCount9PointPatch))
+    if (viableProxCount > 2.0f)
     {
         isProxTopVisible = true;
     }
@@ -116,6 +113,23 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float3 topSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
     float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
+    
+    float3 tipRhs = float3(0.0f, 0.0f, 0.0f);
+    float3 topRhs = float3(0.0f, 0.0f, 0.0f);
+    for (int poissonIndex = 1; poissonIndex < subsampleCount5PointStencil; ++poissonIndex)
+    {
+        float2 offset = float2(subsamplePixelOffset5PointStencil[poissonIndex]) * viewportInv;
+        float2 sampleUVTip = tipTracedScreenPos + offset;
+        sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+        float2 sampleUVTop = topTracedScreenPos + offset;
+        sampleUVTop = clamp(sampleUVTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+        float3 tipSamplePoisson = colorTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
+        float3 topSamplePoisson = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
+        tipRhs += tipSamplePoisson;
+        topRhs += topSamplePoisson;
+    }
+    tipRhs -= tipSample * 4.0f;
+    topRhs -= topSample * 4.0f;
     //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
     //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
     
@@ -131,9 +145,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     */
     
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
+    float3 finalRhs = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
     {
         finalSample = topSample;
+        finalRhs = topRhs;
 #ifdef DEBUG_COLORS
         finalSample = debugRed;
         //finalSample = float3(halfTopTranslation, 0.0f);
@@ -143,6 +159,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         //finalSample = spareDepth < tipDepth ? spareSample : tipSample;
         finalSample = tipSample;
+        finalRhs = tipRhs;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
         //finalSample = float3(halfTipTranslation, 0.0f);
@@ -155,7 +172,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             //float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
             //float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
-            outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
+            outputInit[currentPixelIndex] = finalSample;
+            outputRhs[currentPixelIndex] = finalRhs;
             //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
             //outputTexture[currentPixelIndex] = float4(abs(velocityHalfPyr), 0.0f, 1.0f);
         }
