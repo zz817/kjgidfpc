@@ -11,6 +11,10 @@ Texture2D<float2> motionReprojectedHalfTopRaw;
 //Texture2D<float4> uiColorTexture;
 
 RWTexture2D<float4> outputTexture;
+RWTexture2D<float3> colorGradXTip;
+RWTexture2D<float3> colorGradYTip;
+RWTexture2D<float3> colorGradXTop;
+RWTexture2D<float3> colorGradYTop;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -49,10 +53,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
     bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionValue) ? true : false;
     bool isTopVisible = !isTopInvisible;
-    /*
+    
     float2 velocityProx = 0.0f;
     bool isProxTopVisible = false;
     float proxTopNorm = 0.0f;
+    float viableProxCount = 0.0f;
     for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
     {
         int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
@@ -64,8 +69,12 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float weight = gaussianDistributionWeightForVariance(offset, 3);
             velocityProx += velocityProxTopElement * weight;
             proxTopNorm += 1.0f * weight;
-            isProxTopVisible = true;
+            viableProxCount += 1.0f;
         }
+    }
+    if (viableProxCount > 0.5f * float(subsampleCount9PointPatch))
+    {
+        isProxTopVisible = true;
     }
     
     if (isProxTopVisible)
@@ -78,7 +87,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             isTopVisible = true;
         }
     }
-    */
+    
     float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
     if (any(velocityHalfPyr >= ImpossibleMotionValue))
     {
@@ -110,6 +119,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
     //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
     
+    /*
     if (any(abs(tipTracedScreenPos - sampleUVTip)) > 0.0f)
     {
         tipSample = 0.0f;
@@ -118,6 +128,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         topSample = 0.0f;
     }
+    */
     
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
