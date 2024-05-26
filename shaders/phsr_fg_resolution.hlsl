@@ -49,7 +49,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
     bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionValue) ? true : false;
     bool isTopVisible = !isTopInvisible;
-    
+    /*
     float2 velocityProx = 0.0f;
     bool isProxTopVisible = false;
     float proxTopNorm = 0.0f;
@@ -78,7 +78,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             isTopVisible = true;
         }
     }
-    
+    */
     float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
     if (any(velocityHalfPyr >= ImpossibleMotionValue))
     {
@@ -109,7 +109,16 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
     //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
     //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-	
+    
+    if (any(abs(tipTracedScreenPos - sampleUVTip)) > 0.0f)
+    {
+        tipSample = 0.0f;
+    }
+    if (any(abs(topTracedScreenPos - sampleUVTop)) > 0.0f)
+    {
+        topSample = 0.0f;
+    }
+    
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
     {
