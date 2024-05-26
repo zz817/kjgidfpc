@@ -1,16 +1,13 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-Texture2D<float2> motionVectorFiner;
-Texture2D<float> motionReliabilityFiner;
-
-RWTexture2D<float2> motionVectorCoarser;
-RWTexture2D<float> motionReliabilityCoarser; //This is coarse too
+Texture2D<float3> inputX;
+RWTexture2D<float3> outputAx;
 
 cbuffer shaderConsts : register(b0)
 {
-    uint2 FinerDimension;
-    uint2 CoarserDimension;
+    uint2 dimensions;
+    float coefficient;
 }
 
 #define TILE_SIZE 8
@@ -21,43 +18,19 @@ cbuffer shaderConsts : register(b0)
 void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint groupThreadIndex : SV_GroupIndex)
 {
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
-    int2 coarserPixelIndex = dispatchThreadId;
-    
-    int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
-    float2 filteredVector = 0.0f;
-    float perPixelWeight = 0.0f;
-    float validSamples = 0.0f;
+    int2 pixelIndex = dispatchThreadId;
+    float3 multipliedVector = -4.0f * inputX[pixelIndex];
+    for (int patchIndex = 1; patchIndex < subsampleCount5PointStencil; ++patchIndex)
     {
-        for (int i = 0; i < subsampleCount4PointTian; ++i)
-        {
-            int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
-            float2 finerVector = motionVectorFiner[finerIndex];
- 
-            if (all(finerVector < ImpossibleMotionValue))
-            {
-                filteredVector += finerVector;
-                validSamples += 1.0f;
-            }
-        }
-        if (validSamples == 0.0f)
-        {
-            filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-            perPixelWeight = 0.0f;
-        }
-        else
-        {
-            float perPixelWeight = validSamples * SafeRcp(float(subsampleCount4PointTian));
-            float normalization = SafeRcp(validSamples);
-            filteredVector *= normalization;
-        }
+        int2 elementIndex = pixelIndex + subsamplePixelOffset5PointStencil[patchIndex];
+        multipliedVector += inputX[elementIndex];
     }
     
     {
-        bool bIsValidhistoryPixel = all(uint2(coarserPixelIndex) < CoarserDimension);
+        bool bIsValidhistoryPixel = all(uint2(pixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            motionVectorCoarser[coarserPixelIndex] = filteredVector;
-            motionReliabilityCoarser[coarserPixelIndex] = perPixelWeight;
+            outputAx[pixelIndex] = multipliedVector;
         }
     }
 }

@@ -18,6 +18,7 @@ enum class ComputeShaderType : uint32_t {
   Push,
   Resolution,
   AxPb,
+  CAxPb,
   Multiply,
   InnerProduct,
   Count
@@ -124,6 +125,7 @@ enum class ConstBufferType : uint32_t {
   Mevc,
   Merge,
   PushPull,
+  Poisson,
   Resolution,
   Count
 };
@@ -209,6 +211,12 @@ struct PyramidParamStruct {
     viewportInv[0] *= 0.5f;
     viewportInv[1] *= 0.5f;
   };
+};
+
+struct PoissonParamStruct
+{
+  uint32_t dimensions[2];
+  float coefficient;
 };
 
 struct ResolutionConstParamStruct {

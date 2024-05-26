@@ -1073,6 +1073,37 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
     g_pContext->CSSetShaderResources(0, 6, emptySrvs);
 }
 
+void ProcessMultiply(InternalResType InX, InternalResType OutAx, const PoissonParamStruct& ppParameters)
+{
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Multiply)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {
+		InternalResourceViewList[static_cast<uint32_t>(InX)].srv
+	};
+	g_pContext->CSSetShaderResources(0, 1, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+		InternalResourceViewList[static_cast<uint32_t>(OutAx)].uav,
+	};
+	g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+
+	ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+	D3D11_MAPPED_SUBRESOURCE mapped = {};
+	g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+	memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+	g_pContext->Unmap(buf, 0);
+
+    uint32_t grid[] = {(ppParameters.dimensions[0] + 8 - 1) / 8, (ppParameters.dimensions[1] + 8 - 1) / 8, 1};
+	g_pContext->CSSetConstantBuffers(0, 1, &buf);
+	g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
+	g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+	ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+	g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+	ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
+	g_pContext->CSSetShaderResources(0, 4, emptySrvs);
+}
+
 void RunAlgo(uint32_t frameIndex, uint32_t total)
 {
     PrepareInput(frameIndex);

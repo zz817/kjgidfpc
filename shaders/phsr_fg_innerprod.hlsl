@@ -1,11 +1,10 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-Texture2D<float2> motionVectorFiner;
-Texture2D<float> motionReliabilityFiner;
+Texture2D<float3> inputVectorA;
+Texture2D<float3> inputVectorB;
 
-RWTexture2D<float2> motionVectorCoarser;
-RWTexture2D<float> motionReliabilityCoarser; //This is coarse too
+RWTexture2D<float3> innerProductAB;
 
 cbuffer shaderConsts : register(b0)
 {
