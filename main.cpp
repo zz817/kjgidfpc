@@ -1794,7 +1794,7 @@ int main()
 
     std::vector<ShaderInfo> shaderList = {
         {ComputeShaderType::Clear,        "phsr_fg_clearing.dxbc"    },
-        {ComputeShaderType::IntermediaryClear,  "phsr_fg_interclear.dxbc" },
+        //{ComputeShaderType::IntermediaryClear,  "phsr_fg_interclear.dxbc" },
         {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
         {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },

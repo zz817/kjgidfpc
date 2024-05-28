@@ -124,7 +124,14 @@ $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_merginghalf.hlsl -p
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_pulling.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pulling.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_pushing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pushing.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_reprojection.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_reprojection.dxbc
-$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_resolution.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_resolution.dxbc</Command>
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_resolution.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_resolution.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_innerprodr.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_innerprodr.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_innerprods.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_innerprods.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_caxpb.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_caxpb.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_axpb.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_axpb.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_vup.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_vup.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_vdown.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_vdown.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_multiply.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_multiply.dxbc</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

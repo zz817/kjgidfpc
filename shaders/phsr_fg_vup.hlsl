@@ -24,8 +24,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
     int2 finerPixelIndex = dispatchThreadId;
     int2 coarserPixelIndex = finerPixelIndex / 2;
-    float2 correctionalVector = correctionVectorCoarser[coarserPixelIndex];
-    float2 residualVector = residualVectorFiner[finerPixelIndex];
+    float3 correctionalVector = correctionVectorCoarser[coarserPixelIndex];
+    float3 residualVector = residualVectorFiner[finerPixelIndex];
     
     {
         bool bIsValidhistoryPixel = all(uint2(finerPixelIndex) < dimension);

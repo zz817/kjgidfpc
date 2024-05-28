@@ -1,11 +1,11 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-RWTexture2D<float3> innerProductRARPartial;
-RWTexture2D<float3> innerProductAPMAPPartial;
+Texture2D<float3> innerProductRARPartial;
+Texture2D<float3> innerProductAPMAPPartial;
 
-Texture2D<float3> innerProductRAR;
-Texture2D<float3> innerProductAPMAP;
+RWTexture2D<float3> innerProductRAR;
+RWTexture2D<float3> innerProductAPMAP;
 
 cbuffer shaderConsts : register(b0)
 {

@@ -23,12 +23,12 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 coarserPixelIndex = dispatchThreadId;
     
     int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
-    float2 filteredVector = 0.0f;
+    float3 filteredVector = 0.0f;
     {
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
             int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
-            float2 finerVector = residualVectorFiner[finerIndex];
+            float3 finerVector = residualVectorFiner[finerIndex];
             filteredVector += finerVector;
         }
     }
