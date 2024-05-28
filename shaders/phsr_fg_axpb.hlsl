@@ -10,6 +10,7 @@ cbuffer shaderConsts : register(b0)
 {
     uint2 dimensions;
     float coefficient;
+    float duplicated;
 }
 
 #define TILE_SIZE 8

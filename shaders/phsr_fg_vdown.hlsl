@@ -8,6 +8,7 @@ cbuffer shaderConsts : register(b0)
 {
     uint2 dimension;
     float coefficient;
+    float duplicated;
 }
 
 SamplerState bilinearClampedSampler : register(s0);

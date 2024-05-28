@@ -12,6 +12,7 @@ cbuffer shaderConsts : register(b0)
 {
     uint2 dimension;
     float coefficient;
+    float duplicated;
 }
 
 #define TILE_SIZE 8
@@ -24,8 +25,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
     int2 pixelIndex = dispatchThreadId;
     
-    float3 outputVector = inputrAr[groupId] * SafeRcp3(inputApMAp[groupId]) * inputX[pixelIndex] + inputB[pixelIndex];
-    
+    float3 outputVector = inputrAr[int2(0, 0)] * SafeRcp3(inputApMAp[int2(0, 0)]) * inputX[pixelIndex] + inputB[pixelIndex];
     {
         bool bIsValidhistoryPixel = all(uint2(pixelIndex) < dimension);
         if (bIsValidhistoryPixel)

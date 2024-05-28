@@ -1111,7 +1111,7 @@ void ProcessInnerproduct()
 		InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrR)].srv,
 		InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAr)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAp)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrMAp)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAp)].srv
 	};
 	g_pContext->CSSetShaderResources(0, 4, ppSrvs);
 
@@ -1124,6 +1124,7 @@ void ProcessInnerproduct()
     ppParameters.dimensions[0] = g_ColorWidth;
     ppParameters.dimensions[1] = g_ColorHeight;
     ppParameters.coefficient = 1.0f;
+    ppParameters.duplicated = 1;
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -1151,8 +1152,8 @@ void ProcessInnerproduct()
     ppUavs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMApPartial)].uav;
 	g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
-    ppParameters.dimensions[0]      = ppParameters.dimensions[0] / 16;
-    ppParameters.dimensions[1]      = ppParameters.dimensions[0] / 16;
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 16;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 16;
     buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
     mapped = {};
     g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -1178,8 +1179,8 @@ void ProcessInnerproduct()
     ppUavs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMAp)].uav;
     g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
-	ppParameters.dimensions[0]      = ppParameters.dimensions[0] / 16;
-	ppParameters.dimensions[1]      = ppParameters.dimensions[0] / 16;
+	ppParameters.dimensions[0] = ppParameters.dimensions[0] / 16;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 16;
 	buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
 	mapped = {};
 	g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -1205,6 +1206,7 @@ void ProcessAxPb(const float               A,
     ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
     ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
     ppParametersLocal.coefficient        = A;
+    ppParametersLocal.duplicated		 = 0;
 
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::AxPb)], nullptr, 0);
 
@@ -1242,6 +1244,7 @@ void ProcessCAxPb(InternalResType           InX,
 	ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
 	ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
 	ppParametersLocal.coefficient        = 1.0f;
+    ppParametersLocal.duplicated         = 0;
 
 	g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::CAxPb)], nullptr, 0);
 
@@ -1251,7 +1254,7 @@ void ProcessCAxPb(InternalResType           InX,
         InternalResourceViewList[static_cast<uint32_t>(InX)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InB)].srv
     };
-	g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+	g_pContext->CSSetShaderResources(0, 4, ppSrvs);
 
     ID3D11UnorderedAccessView* ppUavs[] = {
 		InternalResourceViewList[static_cast<uint32_t>(OutCAxPb)].uav,
@@ -1288,6 +1291,7 @@ void ProcessVDown(const int coarserLayer, const PoissonParamStruct& ppParameters
     ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
     ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
     ppParametersLocal.coefficient        = 1.0f;
+    ppParametersLocal.duplicated         = 0;
 
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::VDown)], nullptr, 0);
 
@@ -1322,6 +1326,7 @@ void ProcessVUp(const int coarserLayer, const PoissonParamStruct& ppParameters)
     ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
     ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
     ppParametersLocal.coefficient        = 1.0f;
+    ppParametersLocal.duplicated         = 0;
 
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::VUp)], nullptr, 0);
 
@@ -1358,6 +1363,7 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[0]      = g_ColorWidth;
     ppParameters.dimensions[1]      = g_ColorHeight;
     ppParameters.coefficient        = 1.0f;
+    ppParameters.duplicated         = 0;
 
     // MgXLv0 <= 0.0f
     ProcessAxPb(-1.0f, InternalResType::CrX, InternalResType::CrX, InternalResType::MgXLv0, ppParameters);
@@ -1599,22 +1605,21 @@ void ProcessConjugateResidual()
 	ppParameters.dimensions[1] = g_ColorHeight;
 	ppParameters.coefficient = 1.0f;
     ppParameters.duplicated = 1.0f;
-    /*
+    
     ProcessMultiply(InternalResType::CrX, InternalResType::CrAx, ppParameters);
     ProcessResidual(InternalResType::CrAx, InternalResType::CrB, InternalResType::CrR, ppParameters);
-    ProcessVCycle(InternalResType::CrR, InternalResType::CrP);
-    ProcessAxPb(0.0f, InternalResType::CrP, InternalResType::CrP, InternalResType::CrR, ppParameters);
+    //ProcessVCycle(InternalResType::CrR, InternalResType::CrP);
+    ProcessAxPb(0.0f, InternalResType::CrR, InternalResType::CrR, InternalResType::CrP, ppParameters);
     ProcessMultiply(InternalResType::CrP, InternalResType::CrAp, ppParameters);
     ProcessMultiply(InternalResType::CrR, InternalResType::CrAr, ppParameters);
-    ProcessVCycle(InternalResType::CrAp, InternalResType::CrMAp);
+    //ProcessVCycle(InternalResType::CrAp, InternalResType::CrMAp);
     ProcessInnerproduct();
-    ProcessCAxPb(InternalResType::CrP, InternalResType::CrX, InternalResType::CrX, ppParameters);
-    */
+    ProcessCAxPb(InternalResType::CrP, InternalResType::CrX, InternalResType::CrAx, ppParameters);
 
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Output)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAx)].srv
     };
     g_pContext->CSSetShaderResources(0, 1, ppSrvs);
 
