@@ -131,6 +131,7 @@ $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_vup.hlsl -profile s
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_vdown.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_vdown.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_innerprodr.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_innerprodr.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_innerprods.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_innerprods.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_output.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_output.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_multiply.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_multiply.dxbc</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>

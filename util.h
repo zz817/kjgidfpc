@@ -25,6 +25,7 @@ enum class ComputeShaderType : uint32_t {
   Multiply,
   InnerProductReduce,
   InnerProductSum,
+  Output,
   Count
 };
 
@@ -240,6 +241,7 @@ struct PoissonParamStruct
 {
   uint32_t dimensions[2];
   float coefficient;
+  float duplicated;
 };
 
 struct ResolutionConstParamStruct {
@@ -320,8 +322,6 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::CrAp:
     case InternalResType::CrMAp:
     case InternalResType::CrAr:
-      return DXGI_FORMAT_R32G32B32_FLOAT;
-
     case InternalResType::MgXLv0:
 	case InternalResType::MgXLv1:
 	case InternalResType::MgXLv2:
@@ -358,7 +358,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ApMAp:
     case InternalResType::rArPartial:
     case InternalResType::ApMApPartial:
-      return DXGI_FORMAT_R32G32B32_FLOAT;
+      return DXGI_FORMAT_R11G11B10_FLOAT;
 
     case InternalResType::Count:
     default:
@@ -386,6 +386,10 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
 	case InternalResType::CrAp:
 	case InternalResType::CrMAp:
 	case InternalResType::CrAr:
+    case InternalResType::MgXLv0:
+    case InternalResType::MgAxLv0:
+    case InternalResType::MgRLv0:
+    case InternalResType::MgBLv0:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:

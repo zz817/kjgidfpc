@@ -392,12 +392,13 @@ HRESULT InitAlgoResources(int width, int height)
     bufDesc.StructureByteStride = 0;
 
     std::map<uint32_t, size_t> ConstBufferSizeMap = {
-        {static_cast<uint32_t>(ConstBufferType::Clearing), sizeof(ClearingConstParamStruct)   },
-        {static_cast<uint32_t>(ConstBufferType::Normalizing), sizeof(NormalizingConstParamStruct)},
+        {static_cast<uint32_t>(ConstBufferType::Clearing),     sizeof(ClearingConstParamStruct)   },
+        {static_cast<uint32_t>(ConstBufferType::Normalizing),  sizeof(NormalizingConstParamStruct)},
         {static_cast<uint32_t>(ConstBufferType::Mevc),         sizeof(MVecParamStruct)            },
         {static_cast<uint32_t>(ConstBufferType::Merge),        sizeof(MergeParamStruct)           },
         {static_cast<uint32_t>(ConstBufferType::PushPull),     sizeof(PyramidParamStruct)         },
         {static_cast<uint32_t>(ConstBufferType::Resolution),   sizeof(ResolutionConstParamStruct) },
+        {static_cast<uint32_t>(ConstBufferType::Poisson),      sizeof(PoissonParamStruct) }
     };
     
     for (uint32_t i = 0; i < static_cast<uint32_t>(ConstBufferType::Count) && SUCCEEDED(hr); i++)
@@ -1052,8 +1053,9 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
 
     //g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
     ID3D11UnorderedAccessView* ppUavs[] = {
+        //g_pColorOutputUav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrB)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrB)].uav
     };
     g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
@@ -1590,13 +1592,14 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessAxPb(0.0f, InternalResType::CrX, InternalResType::MgXLv0, output, ppParameters);
 }
 
-void ProcessConjugateResidual()
+void ProcessConjugateResidual(ResolutionConstParamStruct* pCb)
 {
 	PoissonParamStruct ppParameters = {};
 	ppParameters.dimensions[0] = g_ColorWidth;
 	ppParameters.dimensions[1] = g_ColorHeight;
 	ppParameters.coefficient = 1.0f;
-
+    ppParameters.duplicated = 1.0f;
+    /*
     ProcessMultiply(InternalResType::CrX, InternalResType::CrAx, ppParameters);
     ProcessResidual(InternalResType::CrAx, InternalResType::CrB, InternalResType::CrR, ppParameters);
     ProcessVCycle(InternalResType::CrR, InternalResType::CrP);
@@ -1606,39 +1609,31 @@ void ProcessConjugateResidual()
     ProcessVCycle(InternalResType::CrAp, InternalResType::CrMAp);
     ProcessInnerproduct();
     ProcessCAxPb(InternalResType::CrP, InternalResType::CrX, InternalResType::CrX, ppParameters);
+    */
 
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Output)], nullptr, 0);
 
-
-    PoissonParamStruct ppParametersLocal = {};
-    ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
-    ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
-    ppParametersLocal.coefficient        = 0.0f;
-
-    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::AxPb)], nullptr, 0);
-
-    ID3D11ShaderResourceView* ppSrvs[] = {InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].srv,
-                                          InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].srv};
-    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
-
-    ID3D11UnorderedAccessView* ppUavs[] = {
-        g_pColorOutputUav,
+    ID3D11ShaderResourceView* ppSrvs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].srv
     };
-    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+    g_pContext->CSSetShaderResources(0, 1, ppSrvs);
 
-    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Resolution)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-    memcpy(mapped.pData, &ppParametersLocal, mapped.RowPitch);
+    memcpy(mapped.pData, pCb, mapped.RowPitch);
     g_pContext->Unmap(buf, 0);
 
-    uint32_t grid[] = {(ppParametersLocal.dimensions[0] + 8 - 1) / 8, (ppParametersLocal.dimensions[1] + 8 - 1) / 8, 1};
+    uint32_t grid[] = {(g_ColorWidth + 8 - 1) / 8, (g_ColorHeight + 8 - 1) / 8, 1};
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
     ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
     g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
-    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+    ID3D11ShaderResourceView* emptySrvs[1] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 1, emptySrvs);
 }
 
 void RunAlgo(uint32_t frameIndex, uint32_t total)
@@ -1725,11 +1720,6 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         }
 
         {
-            // Gradient domain input calculation
-
-        }
-
-        {
             // Resolution
             ResolutionConstParamStruct cb = {};
             memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
@@ -1740,6 +1730,19 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
             ProcessFrameGenerationResolution(&cb, grid);
         }
+
+        {
+            // Conjugate Residual
+            ResolutionConstParamStruct cb = {};
+            memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
+            memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
+            memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
+            memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
+            memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
+            memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+            ProcessConjugateResidual(&cb);
+        }
+
         g_pContext->End(endQuery);
         g_pContext->End(disjointQuery);
 
@@ -1810,7 +1813,8 @@ int main()
         {ComputeShaderType::VUp,     "phsr_fg_vup.dxbc"},
         {ComputeShaderType::Multiply,     "phsr_fg_multiply.dxbc"},
         {ComputeShaderType::InnerProductReduce,     "phsr_fg_innerprodr.dxbc"},
-        {ComputeShaderType::InnerProductSum,     "phsr_fg_innerprods.dxbc"}
+        {ComputeShaderType::InnerProductSum,     "phsr_fg_innerprods.dxbc"},
+        {ComputeShaderType::Output,     "phsr_fg_output.dxbc"}
     };
 
     for (size_t i = 0; i < shaderList.size() && SUCCEEDED(hr); i++)
