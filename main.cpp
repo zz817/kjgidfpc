@@ -1368,13 +1368,20 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     // MgXLv0 <= 0.0f
     ProcessAxPb(-1.0f, InternalResType::CrX, InternalResType::CrX, InternalResType::MgXLv0, ppParameters);
     // Jacobian iterations
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv0, InternalResType::MgAxLv0, ppParameters);
         ProcessResidual(InternalResType::MgAxLv0, input, InternalResType::MgRLv0, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv0,
                     InternalResType::MgXLv0,
+                    InternalResType::MgXDLv0,
+                    ppParameters);
+
+        ProcessMultiply(InternalResType::MgXDLv0, InternalResType::MgAxLv0, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv0, input, InternalResType::MgRLv0, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv0,
+                    InternalResType::MgXDLv0,
                     InternalResType::MgXLv0,
                     ppParameters);
     }
@@ -1385,13 +1392,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessVDown(1, ppParameters);
 
     ProcessAxPb(-1.0f, InternalResType::MgBLv1, InternalResType::MgBLv1, InternalResType::MgXLv1, ppParameters);
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv1, InternalResType::MgAxLv1, ppParameters);
         ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv1,
                     InternalResType::MgXLv1,
+                    InternalResType::MgXDLv1,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv1, InternalResType::MgAxLv1, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv1,
+                    InternalResType::MgXDLv1,
                     InternalResType::MgXLv1,
                     ppParameters);
     }
@@ -1402,13 +1415,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessVDown(2, ppParameters);
 
     ProcessAxPb(-1.0f, InternalResType::MgBLv2, InternalResType::MgBLv2, InternalResType::MgXLv2, ppParameters);
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv2, InternalResType::MgAxLv2, ppParameters);
         ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv2,
                     InternalResType::MgXLv2,
+                    InternalResType::MgXDLv2,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv2, InternalResType::MgAxLv2, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv2,
+                    InternalResType::MgXDLv2,
                     InternalResType::MgXLv2,
                     ppParameters);
     }
@@ -1419,13 +1438,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessVDown(3, ppParameters);
 
     ProcessAxPb(-1.0f, InternalResType::MgBLv3, InternalResType::MgBLv3, InternalResType::MgXLv3, ppParameters);
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv3, InternalResType::MgAxLv3, ppParameters);
         ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv3,
                     InternalResType::MgXLv3,
+                    InternalResType::MgXDLv3,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv3, InternalResType::MgAxLv3, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv3,
+                    InternalResType::MgXDLv3,
                     InternalResType::MgXLv3,
                     ppParameters);
     }
@@ -1436,13 +1461,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessVDown(4, ppParameters);
 
     ProcessAxPb(-1.0f, InternalResType::MgBLv4, InternalResType::MgBLv4, InternalResType::MgXLv4, ppParameters);
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv4, InternalResType::MgAxLv4, ppParameters);
         ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv4,
                     InternalResType::MgXLv4,
+                    InternalResType::MgXDLv4,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv4, InternalResType::MgAxLv4, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv4,
+                    InternalResType::MgXDLv4,
                     InternalResType::MgXLv4,
                     ppParameters);
     }
@@ -1453,13 +1484,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessVDown(5, ppParameters);
 
     ProcessAxPb(-1.0f, InternalResType::MgBLv5, InternalResType::MgBLv5, InternalResType::MgXLv5, ppParameters);
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv5, InternalResType::MgAxLv5, ppParameters);
         ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv5,
                     InternalResType::MgXLv5,
+                    InternalResType::MgXDLv5,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv5, InternalResType::MgAxLv5, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv5,
+                    InternalResType::MgXDLv5,
                     InternalResType::MgXLv5,
                     ppParameters);
     }
@@ -1470,13 +1507,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessVDown(6, ppParameters);
 
     ProcessAxPb(-1.0f, InternalResType::MgBLv6, InternalResType::MgBLv6, InternalResType::MgXLv6, ppParameters);
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv6, InternalResType::MgAxLv6, ppParameters);
         ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv6,
                     InternalResType::MgXLv6,
+                    InternalResType::MgXDLv6,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv6, InternalResType::MgAxLv6, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv6,
+                    InternalResType::MgXDLv6,
                     InternalResType::MgXLv6,
                     ppParameters);
     }
@@ -1489,25 +1532,34 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessAxPb(-1.0f, InternalResType::MgBLv7, InternalResType::MgBLv7, InternalResType::MgXLv7, ppParameters);
     for (int i = 0; i < 10; ++i)
     {
-        ProcessMultiply(InternalResType::MgXLv7, InternalResType::MgAxLv7, ppParameters);
+        InternalResType InX  = i % 2 == 0 ? InternalResType::MgXLv7 : InternalResType::MgXDLv7;
+        InternalResType InXD = i % 2 == 0 ? InternalResType::MgXDLv7 : InternalResType::MgXLv7;
+
+        ProcessMultiply(InX, InternalResType::MgAxLv7, ppParameters);
         ProcessResidual(InternalResType::MgAxLv7, InternalResType::MgBLv7, InternalResType::MgRLv7, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv7,
-                    InternalResType::MgXLv7,
-                    InternalResType::MgXLv7,
+                    InX,
+                    InXD,
                     ppParameters);
     }
     ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(7, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv6, InternalResType::MgAxLv6, ppParameters);
         ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv6,
                     InternalResType::MgXLv6,
+                    InternalResType::MgXDLv6,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv6, InternalResType::MgAxLv6, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv6,
+                    InternalResType::MgXDLv6,
                     InternalResType::MgXLv6,
                     ppParameters);
     }
@@ -1515,13 +1567,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(6, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv5, InternalResType::MgAxLv5, ppParameters);
         ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv5,
                     InternalResType::MgXLv5,
+                    InternalResType::MgXDLv5,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv5, InternalResType::MgAxLv5, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv5,
+                    InternalResType::MgXDLv5,
                     InternalResType::MgXLv5,
                     ppParameters);
     }
@@ -1529,13 +1587,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(5, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv4, InternalResType::MgAxLv4, ppParameters);
         ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv4,
                     InternalResType::MgXLv4,
+                    InternalResType::MgXDLv4,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv4, InternalResType::MgAxLv4, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv4,
+                    InternalResType::MgXDLv4,
                     InternalResType::MgXLv4,
                     ppParameters);
     }
@@ -1543,13 +1607,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(4, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv3, InternalResType::MgAxLv3, ppParameters);
         ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv3,
                     InternalResType::MgXLv3,
+                    InternalResType::MgXDLv3,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv3, InternalResType::MgAxLv3, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv3,
+                    InternalResType::MgXDLv3,
                     InternalResType::MgXLv3,
                     ppParameters);
     }
@@ -1557,13 +1627,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(3, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv2, InternalResType::MgAxLv2, ppParameters);
         ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv2,
                     InternalResType::MgXLv2,
+                    InternalResType::MgXDLv2,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv2, InternalResType::MgAxLv2, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv2,
+                    InternalResType::MgXDLv2,
                     InternalResType::MgXLv2,
                     ppParameters);
     }
@@ -1571,13 +1647,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(2, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv1, InternalResType::MgAxLv1, ppParameters);
         ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv1,
                     InternalResType::MgXLv1,
+                    InternalResType::MgXDLv1,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv1, InternalResType::MgAxLv1, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv1,
+                    InternalResType::MgXDLv1,
                     InternalResType::MgXLv1,
                     ppParameters);
     }
@@ -1585,13 +1667,19 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
     ProcessVUp(1, ppParameters);
 
-    for (int i = 0; i < 3; ++i)
     {
         ProcessMultiply(InternalResType::MgXLv0, InternalResType::MgAxLv0, ppParameters);
         ProcessResidual(InternalResType::MgAxLv0, InternalResType::CrB, InternalResType::MgRLv0, ppParameters);
         ProcessAxPb(-0.25f * 0.15f,
                     InternalResType::MgRLv0,
                     InternalResType::MgXLv0,
+                    InternalResType::MgXDLv0,
+                    ppParameters);
+        ProcessMultiply(InternalResType::MgXDLv0, InternalResType::MgAxLv0, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv0, InternalResType::CrB, InternalResType::MgRLv0, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv0,
+                    InternalResType::MgXDLv0,
                     InternalResType::MgXLv0,
                     ppParameters);
     }
@@ -1608,18 +1696,18 @@ void ProcessConjugateResidual()
     
     ProcessMultiply(InternalResType::CrX, InternalResType::CrAx, ppParameters);
     ProcessResidual(InternalResType::CrAx, InternalResType::CrB, InternalResType::CrR, ppParameters);
-    //ProcessVCycle(InternalResType::CrR, InternalResType::CrP);
-    ProcessAxPb(0.0f, InternalResType::CrR, InternalResType::CrR, InternalResType::CrP, ppParameters);
+    ProcessVCycle(InternalResType::CrR, InternalResType::CrP);
+    ProcessAxPb(0.0f, InternalResType::CrP, InternalResType::CrP, InternalResType::CrR, ppParameters);
     ProcessMultiply(InternalResType::CrP, InternalResType::CrAp, ppParameters);
     ProcessMultiply(InternalResType::CrR, InternalResType::CrAr, ppParameters);
-    //ProcessVCycle(InternalResType::CrAp, InternalResType::CrMAp);
+    ProcessVCycle(InternalResType::CrAp, InternalResType::CrMAp);
     ProcessInnerproduct();
-    ProcessCAxPb(InternalResType::CrP, InternalResType::CrX, InternalResType::CrAx, ppParameters);
+    ProcessCAxPb(InternalResType::CrP, InternalResType::CrX, InternalResType::CrXD, ppParameters);
 
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Output)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAx)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrXD)].srv
     };
     g_pContext->CSSetShaderResources(0, 1, ppSrvs);
 

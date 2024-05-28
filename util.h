@@ -91,6 +91,7 @@ enum class InternalResType : uint32_t {
 
   CrB,
   CrX,
+  CrXD,
   CrAx,
   CrR,
   CrP,
@@ -106,6 +107,15 @@ enum class InternalResType : uint32_t {
   MgXLv5,
   MgXLv6,
   MgXLv7,
+
+  MgXDLv0,
+  MgXDLv1,
+  MgXDLv2,
+  MgXDLv3,
+  MgXDLv4,
+  MgXDLv5,
+  MgXDLv6,
+  MgXDLv7,
 
   MgAxLv0,
   MgAxLv1,
@@ -316,6 +326,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 
     case InternalResType::CrB:
     case InternalResType::CrX:
+    case InternalResType::CrXD:
     case InternalResType::CrAx:
     case InternalResType::CrR:
     case InternalResType::CrP:
@@ -330,6 +341,14 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::MgXLv5:
 	case InternalResType::MgXLv6:
 	case InternalResType::MgXLv7:
+    case InternalResType::MgXDLv0:
+    case InternalResType::MgXDLv1:
+    case InternalResType::MgXDLv2:
+    case InternalResType::MgXDLv3:
+    case InternalResType::MgXDLv4:
+    case InternalResType::MgXDLv5:
+    case InternalResType::MgXDLv6:
+    case InternalResType::MgXDLv7:
     case InternalResType::MgAxLv0:
     case InternalResType::MgAxLv1:
     case InternalResType::MgAxLv2:
@@ -380,6 +399,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PrevMvecDuplicated:
     case InternalResType::CrB:
     case InternalResType::CrX:
+    case InternalResType::CrXD:
     case InternalResType::CrAx:
     case InternalResType::CrR:
     case InternalResType::CrP:
@@ -387,6 +407,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
 	case InternalResType::CrMAp:
 	case InternalResType::CrAr:
     case InternalResType::MgXLv0:
+    case InternalResType::MgXDLv0:
     case InternalResType::MgAxLv0:
     case InternalResType::MgRLv0:
     case InternalResType::MgBLv0:
@@ -397,6 +418,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv1:
     case InternalResType::PushedDepthLv1:
     case InternalResType::MgXLv1:
+    case InternalResType::MgXDLv1:
     case InternalResType::MgAxLv1:
     case InternalResType::MgRLv1:
     case InternalResType::MgBLv1:
@@ -407,6 +429,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv2:
     case InternalResType::PushedDepthLv2:
     case InternalResType::MgXLv2:
+    case InternalResType::MgXDLv2:
     case InternalResType::MgAxLv2:
     case InternalResType::MgRLv2:
     case InternalResType::MgBLv2:
@@ -417,6 +440,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv3:
     case InternalResType::PushedDepthLv3:
     case InternalResType::MgXLv3:
+    case InternalResType::MgXDLv3:
     case InternalResType::MgAxLv3:
     case InternalResType::MgRLv3:
     case InternalResType::MgBLv3:
@@ -427,6 +451,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv4:
     case InternalResType::PushedDepthLv4:
     case InternalResType::MgXLv4:
+    case InternalResType::MgXDLv4:
     case InternalResType::MgAxLv4:
     case InternalResType::MgRLv4:
     case InternalResType::MgBLv4:
@@ -437,6 +462,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv5:
     case InternalResType::PushedDepthLv5:
     case InternalResType::MgXLv5:
+    case InternalResType::MgXDLv5:
     case InternalResType::MgAxLv5:
     case InternalResType::MgRLv5:
     case InternalResType::MgBLv5:
@@ -447,6 +473,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv6:
     case InternalResType::PushedDepthLv6:
     case InternalResType::MgXLv6:
+    case InternalResType::MgXDLv6:
     case InternalResType::MgAxLv6:
     case InternalResType::MgRLv6:
     case InternalResType::MgBLv6:
@@ -455,6 +482,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::MotionVectorLv7:
     case InternalResType::InpaintedDepthLv7:
     case InternalResType::MgXLv7:
+    case InternalResType::MgXDLv7:
     case InternalResType::MgAxLv7:
     case InternalResType::MgRLv7:
     case InternalResType::MgBLv7:
