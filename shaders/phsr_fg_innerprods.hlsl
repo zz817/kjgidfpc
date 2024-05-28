@@ -15,6 +15,9 @@ cbuffer shaderConsts : register(b0)
 
 #define TILE_SIZE 8
 
+groupshared float3 sharedRarSum[TILE_SIZE * TILE_SIZE];
+groupshared float3 sharedApMapSum[TILE_SIZE * TILE_SIZE];
+
 //------------------------------------------------------- ENTRY POINT
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]
@@ -41,8 +44,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         apMapSum += vectorAPMAP;
     }
     
-    groupshared float3 sharedRarSum[TILE_SIZE * TILE_SIZE];
-    groupshared float3 sharedApMapSum[TILE_SIZE * TILE_SIZE];
     sharedRarSum[localId.y * TILE_SIZE + localId.x] = rArSum;
     sharedApMapSum[localId.y * TILE_SIZE + localId.x] = apMapSum;
     GroupMemoryBarrierWithGroupSync();
@@ -58,7 +59,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     
     {
-        bool bIsValidhistoryPixel = (localId.y * TILE_SIZE + localId.x == 0);
+        int flatIndex = localId.y * TILE_SIZE + localId.x;
+        bool bIsValidhistoryPixel = (flatIndex == 0) ? true : false;
         if (bIsValidhistoryPixel)
         {
             innerProductRAR[groupId] = sharedRarSum[0];
