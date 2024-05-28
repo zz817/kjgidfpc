@@ -1592,7 +1592,7 @@ void ProcessVCycle(InternalResType input, InternalResType output)
     ProcessAxPb(0.0f, InternalResType::CrX, InternalResType::MgXLv0, output, ppParameters);
 }
 
-void ProcessConjugateResidual(ResolutionConstParamStruct* pCb)
+void ProcessConjugateResidual()
 {
 	PoissonParamStruct ppParameters = {};
 	ppParameters.dimensions[0] = g_ColorWidth;
@@ -1620,10 +1620,10 @@ void ProcessConjugateResidual(ResolutionConstParamStruct* pCb)
 
     g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
 
-    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Resolution)];
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-    memcpy(mapped.pData, pCb, mapped.RowPitch);
+    memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
     g_pContext->Unmap(buf, 0);
 
     uint32_t grid[] = {(g_ColorWidth + 8 - 1) / 8, (g_ColorHeight + 8 - 1) / 8, 1};
@@ -1733,14 +1733,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         {
             // Conjugate Residual
-            ResolutionConstParamStruct cb = {};
-            memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
-            memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
-            memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
-            memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
-            memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
-            memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
-            ProcessConjugateResidual(&cb);
+            ProcessConjugateResidual();
         }
 
         g_pContext->End(endQuery);

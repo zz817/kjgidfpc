@@ -6,14 +6,10 @@ RWTexture2D<float4> outputAxPb;
 
 cbuffer shaderConsts : register(b0)
 {
-    float4x4 prevClipToClip;
-    float4x4 clipToPrevClip;
-    
     uint2 dimensions;
-    float2 tipTopDistance;
-    float2 viewportSize;
-    float2 viewportInv;
-};
+    float coefficient;
+    float duplicated;
+}
 
 #define TILE_SIZE 8
 
