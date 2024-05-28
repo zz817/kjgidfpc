@@ -6,8 +6,6 @@ Texture2D<float3> inputB;
 
 RWTexture2D<float3> outputAxPb;
 
-RWTexture2D<float3> motionVectorCoarser;
-
 cbuffer shaderConsts : register(b0)
 {
     uint2 dimensions;
@@ -25,12 +23,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 pixelIndex = dispatchThreadId;
     
     float3 outputVector = coefficient * inputX[pixelIndex] + inputB[pixelIndex];
-    
     {
         bool bIsValidhistoryPixel = all(uint2(pixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            motionVectorCoarser[pixelIndex] = outputVector;
+            outputAxPb[pixelIndex] = outputVector;
         }
     }
 }

@@ -1,18 +1,18 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-Texture2D<float3> inputrAr;
-Texture2D<float3> inputApMAp;
-Texture2D<float3> inputX;
-Texture2D<float3> inputB;
+Texture2D<float3> residualVectorFiner;
+Texture2D<float3> correctionVectorCoarser;
 
-RWTexture2D<float3> outputAxPb;
+RWTexture2D<float3> residualVectorFinerUpdated;
 
 cbuffer shaderConsts : register(b0)
 {
     uint2 dimension;
     float coefficient;
 }
+
+SamplerState bilinearClampedSampler : register(s0);
 
 #define TILE_SIZE 8
 
@@ -22,15 +22,16 @@ cbuffer shaderConsts : register(b0)
 void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint groupThreadIndex : SV_GroupIndex)
 {
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
-    int2 pixelIndex = dispatchThreadId;
-    
-    float3 outputVector = inputrAr[groupId] * SafeRcp3(inputApMAp[groupId]) * inputX[pixelIndex] + inputB[pixelIndex];
+    int2 finerPixelIndex = dispatchThreadId;
+    int2 coarserPixelIndex = finerPixelIndex / 2;
+    float2 correctionalVector = correctionVectorCoarser[coarserPixelIndex];
+    float2 residualVector = residualVectorFiner[finerPixelIndex];
     
     {
-        bool bIsValidhistoryPixel = all(uint2(pixelIndex) < dimension);
+        bool bIsValidhistoryPixel = all(uint2(finerPixelIndex) < dimension);
         if (bIsValidhistoryPixel)
         {
-            outputAxPb[pixelIndex] = outputVector;
+            residualVectorFinerUpdated[finerPixelIndex] = residualVector + correctionalVector;
         }
     }
 }

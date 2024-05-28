@@ -8,6 +8,7 @@
 
 enum class ComputeShaderType : uint32_t {
   Clear,
+  IntermediaryClear,
   Normalizing,
   Reprojection,
   MergeHalf,
@@ -19,8 +20,11 @@ enum class ComputeShaderType : uint32_t {
   Resolution,
   AxPb,
   CAxPb,
+  VDown,
+  VUp,
   Multiply,
-  InnerProduct,
+  InnerProductReduce,
+  InnerProductSum,
   Count
 };
 
@@ -86,12 +90,14 @@ enum class InternalResType : uint32_t {
 
   CrB,
   CrX,
+  CrAx,
   CrR,
   CrP,
-  CrAP,
+  CrAp,
   CrMAp,
   CrAr,
 
+  MgXLv0,
   MgXLv1,
   MgXLv2,
   MgXLv3,
@@ -100,6 +106,16 @@ enum class InternalResType : uint32_t {
   MgXLv6,
   MgXLv7,
 
+  MgAxLv0,
+  MgAxLv1,
+  MgAxLv2,
+  MgAxLv3,
+  MgAxLv4,
+  MgAxLv5,
+  MgAxLv6,
+  MgAxLv7,
+
+  MgRLv0,
   MgRLv1,
   MgRLv2,
   MgRLv3,
@@ -108,6 +124,7 @@ enum class InternalResType : uint32_t {
   MgRLv6,
   MgRLv7,
 
+  MgBLv0,
   MgBLv1,
   MgBLv2,
   MgBLv3,
@@ -115,6 +132,12 @@ enum class InternalResType : uint32_t {
   MgBLv5,
   MgBLv6,
   MgBLv7,
+
+  rArPartial,
+  ApMApPartial,
+
+  rAr,
+  ApMAp,
 
   Count
 };
@@ -291,13 +314,15 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 
     case InternalResType::CrB:
     case InternalResType::CrX:
+    case InternalResType::CrAx:
     case InternalResType::CrR:
     case InternalResType::CrP:
-    case InternalResType::CrAP:
+    case InternalResType::CrAp:
     case InternalResType::CrMAp:
     case InternalResType::CrAr:
       return DXGI_FORMAT_R32G32B32_FLOAT;
 
+    case InternalResType::MgXLv0:
 	case InternalResType::MgXLv1:
 	case InternalResType::MgXLv2:
 	case InternalResType::MgXLv3:
@@ -305,6 +330,15 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::MgXLv5:
 	case InternalResType::MgXLv6:
 	case InternalResType::MgXLv7:
+    case InternalResType::MgAxLv0:
+    case InternalResType::MgAxLv1:
+    case InternalResType::MgAxLv2:
+    case InternalResType::MgAxLv3:
+    case InternalResType::MgAxLv4:
+    case InternalResType::MgAxLv5:
+    case InternalResType::MgAxLv6:
+    case InternalResType::MgAxLv7:
+    case InternalResType::MgRLv0:
 	case InternalResType::MgRLv1:
 	case InternalResType::MgRLv2:
 	case InternalResType::MgRLv3:
@@ -312,6 +346,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::MgRLv5:
 	case InternalResType::MgRLv6:
 	case InternalResType::MgRLv7:
+    case InternalResType::MgBLv0:
     case InternalResType::MgBLv1:
     case InternalResType::MgBLv2:
     case InternalResType::MgBLv3:
@@ -319,6 +354,10 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::MgBLv5:
 	case InternalResType::MgBLv6:
 	case InternalResType::MgBLv7:
+    case InternalResType::rAr:
+    case InternalResType::ApMAp:
+    case InternalResType::rArPartial:
+    case InternalResType::ApMApPartial:
       return DXGI_FORMAT_R32G32B32_FLOAT;
 
     case InternalResType::Count:
@@ -341,9 +380,10 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PrevMvecDuplicated:
     case InternalResType::CrB:
     case InternalResType::CrX:
+    case InternalResType::CrAx:
     case InternalResType::CrR:
     case InternalResType::CrP:
-	case InternalResType::CrAP:
+	case InternalResType::CrAp:
 	case InternalResType::CrMAp:
 	case InternalResType::CrAr:
       return {originWidth, originHeight};
@@ -353,6 +393,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv1:
     case InternalResType::PushedDepthLv1:
     case InternalResType::MgXLv1:
+    case InternalResType::MgAxLv1:
     case InternalResType::MgRLv1:
     case InternalResType::MgBLv1:
       return {originWidth / 2, originHeight / 2};
@@ -362,6 +403,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv2:
     case InternalResType::PushedDepthLv2:
     case InternalResType::MgXLv2:
+    case InternalResType::MgAxLv2:
     case InternalResType::MgRLv2:
     case InternalResType::MgBLv2:
       return {originWidth / 4, originHeight / 4};
@@ -371,6 +413,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv3:
     case InternalResType::PushedDepthLv3:
     case InternalResType::MgXLv3:
+    case InternalResType::MgAxLv3:
     case InternalResType::MgRLv3:
     case InternalResType::MgBLv3:
       return {originWidth / 8, originHeight / 8};
@@ -380,6 +423,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv4:
     case InternalResType::PushedDepthLv4:
     case InternalResType::MgXLv4:
+    case InternalResType::MgAxLv4:
     case InternalResType::MgRLv4:
     case InternalResType::MgBLv4:
 	  return {originWidth / 16, originHeight / 16};
@@ -389,6 +433,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv5:
     case InternalResType::PushedDepthLv5:
     case InternalResType::MgXLv5:
+    case InternalResType::MgAxLv5:
     case InternalResType::MgRLv5:
     case InternalResType::MgBLv5:
       return {originWidth / 32, originHeight / 32};
@@ -398,6 +443,7 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::PushedVectorLv6:
     case InternalResType::PushedDepthLv6:
     case InternalResType::MgXLv6:
+    case InternalResType::MgAxLv6:
     case InternalResType::MgRLv6:
     case InternalResType::MgBLv6:
       return {originWidth / 64, originHeight / 64};
@@ -405,9 +451,18 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::MotionVectorLv7:
     case InternalResType::InpaintedDepthLv7:
     case InternalResType::MgXLv7:
+    case InternalResType::MgAxLv7:
     case InternalResType::MgRLv7:
     case InternalResType::MgBLv7:
       return {originWidth / 128, originHeight / 128};
+
+    case InternalResType::rArPartial:
+    case InternalResType::ApMApPartial:
+	  return {originWidth / 16, originHeight / 16};
+
+    case InternalResType::rAr:
+    case InternalResType::ApMAp:
+        return {originWidth / 16, originHeight / 16};
 
     case InternalResType::Count:
     default:

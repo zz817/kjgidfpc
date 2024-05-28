@@ -1077,31 +1077,568 @@ void ProcessMultiply(InternalResType InX, InternalResType OutAx, const PoissonPa
 {
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Multiply)], nullptr, 0);
 
-    ID3D11ShaderResourceView* ppSrvs[] = {
-		InternalResourceViewList[static_cast<uint32_t>(InX)].srv
-	};
-	g_pContext->CSSetShaderResources(0, 1, ppSrvs);
+    ID3D11ShaderResourceView* ppSrvs[] = {InternalResourceViewList[static_cast<uint32_t>(InX)].srv};
+    g_pContext->CSSetShaderResources(0, 1, ppSrvs);
 
     ID3D11UnorderedAccessView* ppUavs[] = {
-		InternalResourceViewList[static_cast<uint32_t>(OutAx)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(OutAx)].uav,
+    };
+    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+    uint32_t grid[] = {(ppParameters.dimensions[0] + 8 - 1) / 8, (ppParameters.dimensions[1] + 8 - 1) / 8, 1};
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+    ID3D11ShaderResourceView* emptySrvs[1] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 1, emptySrvs);
+}
+
+void ProcessInnerproduct()
+{
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::InnerProductReduce)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {
+		InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrR)].srv,
+		InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAr)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrAp)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrMAp)].srv
+	};
+	g_pContext->CSSetShaderResources(0, 4, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+		InternalResourceViewList[static_cast<uint32_t>(InternalResType::rAr)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMAp)].uav
+	};
+	g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+    PoissonParamStruct ppParameters = {};
+    ppParameters.dimensions[0] = g_ColorWidth;
+    ppParameters.dimensions[1] = g_ColorHeight;
+    ppParameters.coefficient = 1.0f;
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+	uint32_t grid[] = {(g_ColorWidth + 16 - 1) / 16, (g_ColorHeight + 16 - 1) / 16, 1};
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+	g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+	ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
+	g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, 0);
+	ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
+	g_pContext->CSSetShaderResources(0, 4, emptySrvs);
+
+
+
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::InnerProductSum)], nullptr, 0);
+
+	ppSrvs[0] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::rAr)].srv;
+	ppSrvs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMAp)].srv;
+	g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+	ppUavs[0] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::rArPartial)].uav;
+    ppUavs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMApPartial)].uav;
+	g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+
+    ppParameters.dimensions[0]      = ppParameters.dimensions[0] / 16;
+    ppParameters.dimensions[1]      = ppParameters.dimensions[0] / 16;
+    buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+	grid[0] = (grid[0] + 16 - 1) / 16;
+    grid[1] = (grid[1] + 16 - 1) / 16;
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+	g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+	g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, 0);
+	g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+
+
+
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::InnerProductSum)], nullptr, 0);
+    ppSrvs[0] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::rArPartial)].srv;
+    ppSrvs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMApPartial)].srv;
+    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+    ppUavs[0] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::rAr)].uav;
+    ppUavs[1] = InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMAp)].uav;
+    g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+
+	ppParameters.dimensions[0]      = ppParameters.dimensions[0] / 16;
+	ppParameters.dimensions[1]      = ppParameters.dimensions[0] / 16;
+	buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+	mapped = {};
+	g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+	memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+	g_pContext->Unmap(buf, 0);
+
+    grid[0] = 1;
+    grid[1] = 1;
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, 0);
+    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+}
+
+void ProcessAxPb(const float               A,
+                 InternalResType           InX,
+                 InternalResType           InB,
+                 InternalResType           OutAxPb,
+                 const PoissonParamStruct& ppParameters)
+{
+    PoissonParamStruct ppParametersLocal = {};
+    ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
+    ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
+    ppParametersLocal.coefficient        = A;
+
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::AxPb)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {InternalResourceViewList[static_cast<uint32_t>(InX)].srv,
+                                          InternalResourceViewList[static_cast<uint32_t>(InB)].srv};
+    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(OutAxPb)].uav,
+    };
+    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParametersLocal, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+    uint32_t grid[] = {(ppParametersLocal.dimensions[0] + 8 - 1) / 8, (ppParametersLocal.dimensions[1] + 8 - 1) / 8, 1};
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+}
+
+void ProcessCAxPb(InternalResType           InX,
+                  InternalResType           InB,
+                  InternalResType           OutCAxPb,
+                  const PoissonParamStruct& ppParameters)
+{
+	PoissonParamStruct ppParametersLocal = {};
+	ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
+	ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
+	ppParametersLocal.coefficient        = 1.0f;
+
+	g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::CAxPb)], nullptr, 0);
+
+	ID3D11ShaderResourceView* ppSrvs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::rAr)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ApMAp)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InX)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InB)].srv
+    };
+	g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+		InternalResourceViewList[static_cast<uint32_t>(OutCAxPb)].uav,
 	};
 	g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
 
 	ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 	g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-	memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
+	memcpy(mapped.pData, &ppParametersLocal, mapped.RowPitch);
 	g_pContext->Unmap(buf, 0);
 
-    uint32_t grid[] = {(ppParameters.dimensions[0] + 8 - 1) / 8, (ppParameters.dimensions[1] + 8 - 1) / 8, 1};
+	uint32_t grid[] = {(ppParametersLocal.dimensions[0] + 8 - 1) / 8, (ppParametersLocal.dimensions[1] + 8 - 1) / 8, 1};
 	g_pContext->CSSetConstantBuffers(0, 1, &buf);
-	g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
 	g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
 	ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
 	g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
 	ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
-	g_pContext->CSSetShaderResources(0, 4, emptySrvs);
+    g_pContext->CSSetShaderResources(0, 4, emptySrvs);
+}
+
+void ProcessResidual(InternalResType           InAX,
+                     InternalResType           InB,
+                     InternalResType           OutBmAX,
+                     const PoissonParamStruct& ppParameters)
+{
+    ProcessAxPb(-1.0f, InAX, InB, OutBmAX, ppParameters);
+}
+
+void ProcessVDown(const int coarserLayer, const PoissonParamStruct& ppParameters)
+{
+    PoissonParamStruct ppParametersLocal = {};
+    ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
+    ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
+    ppParametersLocal.coefficient        = 1.0f;
+
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::VDown)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MgRLv0) + coarserLayer - 1].srv};
+    g_pContext->CSSetShaderResources(0, 1, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MgBLv0) + coarserLayer].uav,
+    };
+    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParametersLocal, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+    uint32_t grid[] = {(ppParametersLocal.dimensions[0] + 8 - 1) / 8, (ppParametersLocal.dimensions[1] + 8 - 1) / 8, 1};
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+    ID3D11ShaderResourceView* emptySrvs[1] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 1, emptySrvs);
+}
+
+void ProcessVUp(const int coarserLayer, const PoissonParamStruct& ppParameters)
+{
+    PoissonParamStruct ppParametersLocal = {};
+    ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
+    ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
+    ppParametersLocal.coefficient        = 1.0f;
+
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::VUp)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MgXLv0) + coarserLayer - 1].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MgXLv0) + coarserLayer].srv
+    };
+    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MgXLv0) + coarserLayer - 1].uav
+    };
+    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParametersLocal, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+    uint32_t grid[] = {(ppParametersLocal.dimensions[0] + 8 - 1) / 8, (ppParametersLocal.dimensions[1] + 8 - 1) / 8, 1};
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+}
+
+void ProcessVCycle(InternalResType input, InternalResType output)
+{
+    PoissonParamStruct ppParameters = {};
+    ppParameters.dimensions[0]      = g_ColorWidth;
+    ppParameters.dimensions[1]      = g_ColorHeight;
+    ppParameters.coefficient        = 1.0f;
+
+    // MgXLv0 <= 0.0f
+    ProcessAxPb(-1.0f, InternalResType::CrX, InternalResType::CrX, InternalResType::MgXLv0, ppParameters);
+    // Jacobian iterations
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv0, InternalResType::MgAxLv0, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv0, input, InternalResType::MgRLv0, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv0,
+                    InternalResType::MgXLv0,
+                    InternalResType::MgXLv0,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv0, InternalResType::MgAxLv0, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv0, input, InternalResType::MgRLv0, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(1, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv1, InternalResType::MgBLv1, InternalResType::MgXLv1, ppParameters);
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv1, InternalResType::MgAxLv1, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv1,
+                    InternalResType::MgXLv1,
+                    InternalResType::MgXLv1,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv1, InternalResType::MgAxLv1, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(2, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv2, InternalResType::MgBLv2, InternalResType::MgXLv2, ppParameters);
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv2, InternalResType::MgAxLv2, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv2,
+                    InternalResType::MgXLv2,
+                    InternalResType::MgXLv2,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv2, InternalResType::MgAxLv2, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(3, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv3, InternalResType::MgBLv3, InternalResType::MgXLv3, ppParameters);
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv3, InternalResType::MgAxLv3, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv3,
+                    InternalResType::MgXLv3,
+                    InternalResType::MgXLv3,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv3, InternalResType::MgAxLv3, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(4, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv4, InternalResType::MgBLv4, InternalResType::MgXLv4, ppParameters);
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv4, InternalResType::MgAxLv4, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv4,
+                    InternalResType::MgXLv4,
+                    InternalResType::MgXLv4,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv4, InternalResType::MgAxLv4, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(5, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv5, InternalResType::MgBLv5, InternalResType::MgXLv5, ppParameters);
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv5, InternalResType::MgAxLv5, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv5,
+                    InternalResType::MgXLv5,
+                    InternalResType::MgXLv5,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv5, InternalResType::MgAxLv5, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(6, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv6, InternalResType::MgBLv6, InternalResType::MgXLv6, ppParameters);
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv6, InternalResType::MgAxLv6, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv6,
+                    InternalResType::MgXLv6,
+                    InternalResType::MgXLv6,
+                    ppParameters);
+    }
+    ProcessMultiply(InternalResType::MgXLv6, InternalResType::MgAxLv6, ppParameters);
+    ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] / 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] / 2;
+    ProcessVDown(7, ppParameters);
+
+    ProcessAxPb(-1.0f, InternalResType::MgBLv7, InternalResType::MgBLv7, InternalResType::MgXLv7, ppParameters);
+    for (int i = 0; i < 10; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv7, InternalResType::MgAxLv7, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv7, InternalResType::MgBLv7, InternalResType::MgRLv7, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv7,
+                    InternalResType::MgXLv7,
+                    InternalResType::MgXLv7,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(7, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv6, InternalResType::MgAxLv6, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv6, InternalResType::MgBLv6, InternalResType::MgRLv6, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv6,
+                    InternalResType::MgXLv6,
+                    InternalResType::MgXLv6,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(6, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv5, InternalResType::MgAxLv5, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv5, InternalResType::MgBLv5, InternalResType::MgRLv5, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv5,
+                    InternalResType::MgXLv5,
+                    InternalResType::MgXLv5,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(5, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv4, InternalResType::MgAxLv4, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv4, InternalResType::MgBLv4, InternalResType::MgRLv4, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv4,
+                    InternalResType::MgXLv4,
+                    InternalResType::MgXLv4,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(4, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv3, InternalResType::MgAxLv3, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv3, InternalResType::MgBLv3, InternalResType::MgRLv3, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv3,
+                    InternalResType::MgXLv3,
+                    InternalResType::MgXLv3,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(3, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv2, InternalResType::MgAxLv2, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv2, InternalResType::MgBLv2, InternalResType::MgRLv2, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv2,
+                    InternalResType::MgXLv2,
+                    InternalResType::MgXLv2,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(2, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv1, InternalResType::MgAxLv1, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv1, InternalResType::MgBLv1, InternalResType::MgRLv1, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv1,
+                    InternalResType::MgXLv1,
+                    InternalResType::MgXLv1,
+                    ppParameters);
+    }
+    ppParameters.dimensions[0] = ppParameters.dimensions[0] * 2;
+    ppParameters.dimensions[1] = ppParameters.dimensions[1] * 2;
+    ProcessVUp(1, ppParameters);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        ProcessMultiply(InternalResType::MgXLv0, InternalResType::MgAxLv0, ppParameters);
+        ProcessResidual(InternalResType::MgAxLv0, InternalResType::CrB, InternalResType::MgRLv0, ppParameters);
+        ProcessAxPb(-0.25f * 0.15f,
+                    InternalResType::MgRLv0,
+                    InternalResType::MgXLv0,
+                    InternalResType::MgXLv0,
+                    ppParameters);
+    }
+    ProcessAxPb(0.0f, InternalResType::CrX, InternalResType::MgXLv0, output, ppParameters);
+}
+
+void ProcessConjugateResidual()
+{
+	PoissonParamStruct ppParameters = {};
+	ppParameters.dimensions[0] = g_ColorWidth;
+	ppParameters.dimensions[1] = g_ColorHeight;
+	ppParameters.coefficient = 1.0f;
+
+    ProcessMultiply(InternalResType::CrX, InternalResType::CrAx, ppParameters);
+    ProcessResidual(InternalResType::CrAx, InternalResType::CrB, InternalResType::CrR, ppParameters);
+    ProcessVCycle(InternalResType::CrR, InternalResType::CrP);
+    ProcessAxPb(0.0f, InternalResType::CrP, InternalResType::CrP, InternalResType::CrR, ppParameters);
+    ProcessMultiply(InternalResType::CrP, InternalResType::CrAp, ppParameters);
+    ProcessMultiply(InternalResType::CrR, InternalResType::CrAr, ppParameters);
+    ProcessVCycle(InternalResType::CrAp, InternalResType::CrMAp);
+    ProcessInnerproduct();
+    ProcessCAxPb(InternalResType::CrP, InternalResType::CrX, InternalResType::CrX, ppParameters);
+
+
+
+    PoissonParamStruct ppParametersLocal = {};
+    ppParametersLocal.dimensions[0]      = ppParameters.dimensions[0];
+    ppParametersLocal.dimensions[1]      = ppParameters.dimensions[1];
+    ppParametersLocal.coefficient        = 0.0f;
+
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::AxPb)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].srv,
+                                          InternalResourceViewList[static_cast<uint32_t>(InternalResType::CrX)].srv};
+    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        g_pColorOutputUav,
+    };
+    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Poisson)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, &ppParametersLocal, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+    uint32_t grid[] = {(ppParametersLocal.dimensions[0] + 8 - 1) / 8, (ppParametersLocal.dimensions[1] + 8 - 1) / 8, 1};
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
+    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
 }
 
 void RunAlgo(uint32_t frameIndex, uint32_t total)
@@ -1257,6 +1794,7 @@ int main()
 
     std::vector<ShaderInfo> shaderList = {
         {ComputeShaderType::Clear,        "phsr_fg_clearing.dxbc"    },
+        {ComputeShaderType::IntermediaryClear,  "phsr_fg_interclear.dxbc" },
         {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
         {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },
@@ -1266,6 +1804,13 @@ int main()
         {ComputeShaderType::LastStretch,  "phsr_fg_laststretch.dxbc" },
         {ComputeShaderType::Push,         "phsr_fg_pushing.dxbc"     },
         {ComputeShaderType::Resolution,   "phsr_fg_resolution.dxbc"  },
+        {ComputeShaderType::AxPb,     "phsr_fg_axpb.dxbc"    },
+        {ComputeShaderType::CAxPb,     "phsr_fg_caxpb.dxbc"},
+        {ComputeShaderType::VDown,     "phsr_fg_vdown.dxbc"},
+        {ComputeShaderType::VUp,     "phsr_fg_vup.dxbc"},
+        {ComputeShaderType::Multiply,     "phsr_fg_multiply.dxbc"},
+        {ComputeShaderType::InnerProductReduce,     "phsr_fg_innerprodr.dxbc"},
+        {ComputeShaderType::InnerProductSum,     "phsr_fg_innerprods.dxbc"}
     };
 
     for (size_t i = 0; i < shaderList.size() && SUCCEEDED(hr); i++)
