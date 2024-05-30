@@ -859,41 +859,6 @@ void AddPushPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
     }
 }
 
-void CopyLayers(const int layer, const PyramidParamStruct& ppParameters)
-{
-    ID3D11Buffer* buf        = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)];
-    {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::MergeFull)], nullptr, 0);
-
-        g_pContext->CSSetShaderResources(
-            0,
-            1,
-            &InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + layer - 1].srv);
-
-        g_pContext->CSSetUnorderedAccessViews(
-            0,
-            1,
-            &InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1) + layer - 1].uav,
-            nullptr);
-
-        D3D11_MAPPED_SUBRESOURCE mapped = {};
-        g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-        memcpy(mapped.pData, &ppParameters, mapped.RowPitch);
-        g_pContext->Unmap(buf, 0);
-        g_pContext->CSSetConstantBuffers(0, 1, &buf);
-
-        uint32_t grid[] = {(ppParameters.FinerDimension[0] + 8 - 1) / 8,
-                           (ppParameters.FinerDimension[1] + 8 - 1) / 8,
-                           1};
-        g_pContext->Dispatch(grid[0], grid[1], grid[2]);
-
-        ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-        g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
-        ID3D11ShaderResourceView* emptySrvs[1] = {nullptr};
-        g_pContext->CSSetShaderResources(0, 1, emptySrvs);
-    }
-}
-
 void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const int layers)
 {
     if (layers == 0)
@@ -1224,7 +1189,7 @@ int main()
         {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
         {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },
-        //{ComputeShaderType::MergeFull,    "phsr_fg_mergingfull.dxbc" },
+        {ComputeShaderType::MergeTip,    "phsr_fg_mergingtip.dxbc" },
         {ComputeShaderType::FirstLeg,     "phsr_fg_firstleg.dxbc"    },
         {ComputeShaderType::Pull,         "phsr_fg_pulling.dxbc"     },
         {ComputeShaderType::LastStretch,  "phsr_fg_laststretch.dxbc" },

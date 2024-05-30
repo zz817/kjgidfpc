@@ -119,7 +119,8 @@
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_normalizing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_normalizing.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_firstleg.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_firstleg.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_laststretch.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_laststretch.dxbc
-$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_mergingfull.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_mergingfull.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_mergingtip.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_mergingtip.dxbc
+$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_advection.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_advection.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_merginghalf.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_merginghalf.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_pulling.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pulling.dxbc
 $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_pushing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_pushing.dxbc

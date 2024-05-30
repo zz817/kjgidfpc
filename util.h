@@ -11,7 +11,7 @@ enum class ComputeShaderType : uint32_t {
   Normalizing,
   Reprojection,
   MergeHalf,
-  MergeFull,
+  MergeTip,
   FirstLeg,
   Pull,
   LastStretch,
@@ -44,6 +44,8 @@ enum class InputResType : uint32_t {
 enum class InternalResType : uint32_t {
   ReprojectedHalfTopX,
   ReprojectedHalfTopY,
+  ReprojectedHalfTipXIndex,
+  ReprojectedHalfTipYIndex,
 
   ReprojectedHalfTop,
   ReprojectedHalfTopFiltered,
