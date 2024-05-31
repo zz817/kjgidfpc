@@ -74,6 +74,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         finalSample = float3(0.0f, 0.0f, 0.0f) + float3(ImpossibleColorValue, ImpossibleColorValue, ImpossibleColorValue);
         finalDepth = ImpossibleDepthValue;
+#ifdef DEBUG_COLORS
+        finalSample = debugYellow;
+        //finalSample = float3(halfTipTranslation, 0.0f);
+#endif
     }
 
 	{
