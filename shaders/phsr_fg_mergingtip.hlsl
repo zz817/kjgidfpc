@@ -42,21 +42,21 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     //FIXME: Is it distanceHalfTip or distanceHalfTop? They are both 0.5f for now
     const float distanceHalfTop = tipTopDistance.y;
 	
-    uint halfTopX = motionAdvectHalfTipX[currentPixelIndex];
-    uint halfTopY = motionAdvectHalfTipY[currentPixelIndex];
-    int2 halfTopIndex = int2(halfTopX & IndexLast13DigitsMask, halfTopY & IndexLast13DigitsMask);
-    bool bIsHalfTopUnwritten = any(halfTopIndex == UnwrittenIndexIndicator);
+    uint halfTipX = motionAdvectHalfTipX[currentPixelIndex];
+    uint halfTipY = motionAdvectHalfTipY[currentPixelIndex];
+    int2 halfTipIndex = int2(halfTipX & IndexLast13DigitsMask, halfTipY & IndexLast13DigitsMask);
+    bool bIsHalfTipUnwritten = any(halfTipIndex == UnwrittenIndexIndicator);
     //float currDepthValue = currDepthUnprojected[halfTopIndex];
-    float2 motionHalfTipAdv = motionReprojectedTop[halfTopIndex];
+    float2 motionHalfTipAdv = motionReprojectedTop[halfTipIndex];
     float2 samplePosHalfTipAdv = screenPos + motionHalfTipAdv * distanceHalfTop;
     float2 caliberatedUVHalfTop = samplePosHalfTipAdv;
     caliberatedUVHalfTop = clamp(caliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float depthTipAdvSample = prevDepthUnprojected.SampleLevel(bilinearClampedSampler, caliberatedUVHalfTop, 0);
     float3 colorTipAdvSample = colorTextureTip.SampleLevel(bilinearClampedSampler, caliberatedUVHalfTop, 0);
-    if (bIsHalfTopUnwritten)
+    if (bIsHalfTipUnwritten)
     {
         depthTipAdvSample = ImpossibleDepthValue;
-        colorTipAdvSample = float3(0.0f, 0.0f, 0.0f) + float3(ImpossibleColorValue, ImpossibleColorValue, ImpossibleColorValue);
+        colorTipAdvSample = float3(ImpossibleColorValue, ImpossibleColorValue, ImpossibleColorValue);
     }
 	
 	{

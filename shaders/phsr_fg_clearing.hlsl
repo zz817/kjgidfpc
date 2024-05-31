@@ -1,6 +1,8 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
+RWTexture2D<uint> motionAdvectHalfTipX;
+RWTexture2D<uint> motionAdvectHalfTipY;
 RWTexture2D<uint> motionReprojHalfTopX;
 RWTexture2D<uint> motionReprojHalfTopY;
 
@@ -25,6 +27,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     bool bIsValidPixel = all(uint2(currentPixelIndex) < dimensions);
     if (bIsValidPixel)
     {
+        motionAdvectHalfTipX[currentPixelIndex] = UnwrittenPackedClearValue;
+        motionAdvectHalfTipY[currentPixelIndex] = UnwrittenPackedClearValue;
         motionReprojHalfTopX[currentPixelIndex] = UnwrittenPackedClearValue;
         motionReprojHalfTopY[currentPixelIndex] = UnwrittenPackedClearValue;
     }

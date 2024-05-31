@@ -38,10 +38,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     const float distanceHalfTip = tipTopDistance.x;
     const float distanceHalfTop = tipTopDistance.y;
 	
-    //Let the tip flow
-    //FIXME: Is it distanceHalfTip or distanceHalfTop? They are both 0.5f for now
+    //Let the tip flow //FIXME: Is it distanceHalfTip or distanceHalfTop? They are both 0.5f for now
     float2 halfTipTransInvert = mProj * distanceHalfTop;
-    //Tip sample, vorfahrt!
     float2 halfTipAdvectedScreenPos = screenPos - halfTipTransInvert;
     int2 halfTipAdvectedIndex = floor(halfTipAdvectedScreenPos * viewportSize);
     float2 halfTipAdvectedFloatCenter = float2(halfTipAdvectedIndex) + float2(0.5f, 0.5f);	
