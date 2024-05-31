@@ -10,6 +10,7 @@ enum class ComputeShaderType : uint32_t {
   Clear,
   Normalizing,
   Reprojection,
+  Advection,
   MergeHalf,
   MergeTip,
   FirstLeg,
@@ -44,11 +45,17 @@ enum class InputResType : uint32_t {
 enum class InternalResType : uint32_t {
   ReprojectedHalfTopX,
   ReprojectedHalfTopY,
-  ReprojectedHalfTipXIndex,
-  ReprojectedHalfTipYIndex,
+  AdvectedHalfTipX,
+  AdvectedHalfTipY,
 
   ReprojectedHalfTop,
   ReprojectedHalfTopFiltered,
+
+  ReprojectedTopDepth,
+  AdvectedTipDepth,
+
+  ColorReprojectedTop,
+  ColorAdvectedTip,
 
   CurrMevcFiltered,
   PrevMevcFiltered,
@@ -213,7 +220,13 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
   switch (type) {
     case InternalResType::ReprojectedHalfTopX:
     case InternalResType::ReprojectedHalfTopY:
+    case InternalResType::AdvectedHalfTipX:
+    case InternalResType::AdvectedHalfTipY:
       return DXGI_FORMAT_R32_UINT;
+
+    case InternalResType::ColorAdvectedTip:
+    case InternalResType::ColorReprojectedTop:
+      return DXGI_FORMAT_R11G11B10_FLOAT;
 
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
@@ -236,6 +249,8 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::PushedVectorLv6:
       return DXGI_FORMAT_R32G32_FLOAT;
 
+    case InternalResType::ReprojectedTopDepth:
+    case InternalResType::AdvectedTipDepth:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::InpaintedDepthLv2:
     case InternalResType::InpaintedDepthLv3:
@@ -263,6 +278,12 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
   switch (type) {
     case InternalResType::ReprojectedHalfTopX:
     case InternalResType::ReprojectedHalfTopY:
+    case InternalResType::AdvectedHalfTipX:
+    case InternalResType::AdvectedHalfTipY:
+    case InternalResType::ColorAdvectedTip:
+    case InternalResType::ColorReprojectedTop:
+    case InternalResType::AdvectedTipDepth:
+    case InternalResType::ReprojectedTopDepth:
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::CurrMevcFiltered:

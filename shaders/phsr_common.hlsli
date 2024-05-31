@@ -49,6 +49,8 @@ static uint WrittenMTSSIndicator = WrittenLast1DigitMT1;
 
 static float ImpossibleMotionValue = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
 static float ImpossibleMotionOffset = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float ImpossibleColorValue = 4.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float ImpossibleDepthValue = 8.0f; //Have to use this 2's power to prevent floating point gimmicks
 
 //static int depthTotalBits = 19;
 static int expCustomized = 7;

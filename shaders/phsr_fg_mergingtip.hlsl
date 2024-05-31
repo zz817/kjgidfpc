@@ -1,13 +1,16 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-RWTexture2D<uint> motionReprojHalfTopX;
-RWTexture2D<uint> motionReprojHalfTopY;
+RWTexture2D<uint> motionAdvectHalfTipX;
+RWTexture2D<uint> motionAdvectHalfTipY;
 
-RWTexture2D<float2> motionReprojectedTop;
+RWTexture2D<float> depthAdvectedTip;
+//RWTexture2D<float2> motionAdvectedTip;
+RWTexture2D<float3> colorAdvectedTip;
 
-Texture2D<float> currDepthUnprojected;
-Texture2D<float2> currMotionUnprojected;
+Texture2D<float> prevDepthUnprojected;
+Texture2D<float2> motionReprojectedTop;
+Texture2D<float3> colorTextureTip;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -36,28 +39,32 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
 	
+    //FIXME: Is it distanceHalfTip or distanceHalfTop? They are both 0.5f for now
     const float distanceHalfTop = tipTopDistance.y;
 	
-    uint halfTopX = motionReprojHalfTopX[currentPixelIndex];
-    uint halfTopY = motionReprojHalfTopY[currentPixelIndex];
+    uint halfTopX = motionAdvectHalfTipX[currentPixelIndex];
+    uint halfTopY = motionAdvectHalfTipY[currentPixelIndex];
     int2 halfTopIndex = int2(halfTopX & IndexLast13DigitsMask, halfTopY & IndexLast13DigitsMask);
     bool bIsHalfTopUnwritten = any(halfTopIndex == UnwrittenIndexIndicator);
-    float currDepthValue = currDepthUnprojected[halfTopIndex];
-    float2 motionVectorHalfTop = currMotionUnprojected[halfTopIndex];
-    float2 samplePosHalfTop = screenPos - motionVectorHalfTop * distanceHalfTop;
-    float2 motionCaliberatedUVHalfTop = samplePosHalfTop;
-    motionCaliberatedUVHalfTop = clamp(motionCaliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float2 motionHalfTopCaliberated = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
+    //float currDepthValue = currDepthUnprojected[halfTopIndex];
+    float2 motionHalfTipAdv = motionReprojectedTop[halfTopIndex];
+    float2 samplePosHalfTipAdv = screenPos + motionHalfTipAdv * distanceHalfTop;
+    float2 caliberatedUVHalfTop = samplePosHalfTipAdv;
+    caliberatedUVHalfTop = clamp(caliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+    float depthTipAdvSample = prevDepthUnprojected.SampleLevel(bilinearClampedSampler, caliberatedUVHalfTop, 0);
+    float3 colorTipAdvSample = colorTextureTip.SampleLevel(bilinearClampedSampler, caliberatedUVHalfTop, 0);
     if (bIsHalfTopUnwritten)
     {
-        motionHalfTopCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+        depthTipAdvSample = ImpossibleDepthValue;
+        colorTipAdvSample = float3(0.0f, 0.0f, 0.0f) + float3(ImpossibleColorValue, ImpossibleColorValue, ImpossibleColorValue);
     }
 	
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            motionReprojectedTop[currentPixelIndex] = motionHalfTopCaliberated;
+            depthAdvectedTip[currentPixelIndex] = depthTipAdvSample;
+            colorAdvectedTip[currentPixelIndex] = colorTipAdvSample;
         }
     }
 }

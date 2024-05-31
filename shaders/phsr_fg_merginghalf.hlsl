@@ -4,10 +4,13 @@
 RWTexture2D<uint> motionReprojHalfTopX;
 RWTexture2D<uint> motionReprojHalfTopY;
 
-RWTexture2D<float2> motionReprojectedTop;
+RWTexture2D<float> depthReprojectedTop;
+RWTexture2D<float2> motionReprojHalfTop;
+RWTexture2D<float3> colorReprojectedTop;
 
 Texture2D<float> currDepthUnprojected;
 Texture2D<float2> currMotionUnprojected;
+Texture2D<float3> colorTextureTop;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -42,22 +45,28 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     uint halfTopY = motionReprojHalfTopY[currentPixelIndex];
     int2 halfTopIndex = int2(halfTopX & IndexLast13DigitsMask, halfTopY & IndexLast13DigitsMask);
     bool bIsHalfTopUnwritten = any(halfTopIndex == UnwrittenIndexIndicator);
-    float currDepthValue = currDepthUnprojected[halfTopIndex];
+    //float currDepthValue = currDepthUnprojected[halfTopIndex];
     float2 motionVectorHalfTop = currMotionUnprojected[halfTopIndex];
     float2 samplePosHalfTop = screenPos - motionVectorHalfTop * distanceHalfTop;
     float2 motionCaliberatedUVHalfTop = samplePosHalfTop;
     motionCaliberatedUVHalfTop = clamp(motionCaliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float2 motionHalfTopCaliberated = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
+    float depthTopRepSample = currDepthUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
+    float2 motionTopRepSample = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
+    float3 colorTopRepSample = colorTextureTop.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
     if (bIsHalfTopUnwritten)
     {
-        motionHalfTopCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+        colorTopRepSample = float3(ImpossibleColorValue, ImpossibleColorValue, ImpossibleColorValue);
+        motionTopRepSample = float2(ImpossibleMotionValue, ImpossibleMotionValue);
+        depthTopRepSample = ImpossibleDepthValue;
     }
 	
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            motionReprojectedTop[currentPixelIndex] = motionHalfTopCaliberated;
+            depthReprojectedTop[currentPixelIndex] = depthTopRepSample;
+            motionReprojHalfTop[currentPixelIndex] = motionTopRepSample;
+            colorReprojectedTop[currentPixelIndex] = colorTopRepSample;
         }
     }
 }

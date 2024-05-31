@@ -1,9 +1,9 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-Texture2D<float2> prevMotionVector;
+//Texture2D<float2> prevMotionVector;
 Texture2D<float2> currMotionVector;
-Texture2D<float> depthTextureTip;
+//Texture2D<float> depthTextureTip;
 Texture2D<float> depthTextureTop;
 
 RWTexture2D<uint> motionReprojHalfTopX;
@@ -35,7 +35,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
     float2 mCurr = currMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
-    float2 mPrev = prevMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    //float2 mPrev = prevMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
     
     const float distanceFull = tipTopDistance.x + tipTopDistance.y;
     const float distanceHalfTip = tipTopDistance.x;
