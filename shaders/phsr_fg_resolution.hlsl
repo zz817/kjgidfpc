@@ -66,7 +66,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = tipSample;
         finalDepth = tipDepth;
 #ifdef DEBUG_COLORS
-        finalSample = debugGreen;
+        finalSample = debugCyan;
         //finalSample = float3(halfTipTranslation, 0.0f);
 #endif
     }
