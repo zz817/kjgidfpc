@@ -711,18 +711,19 @@ void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Reprojection)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        //InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
-        //InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
-        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv};
+        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv
+    };
     g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopY)].uav
     };
 
-    g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+    g_pContext->CSSetUnorderedAccessViews(0, 4, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Mevc)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -773,9 +774,9 @@ void ProcessFrameGenerationAdvection(MVecParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetShaderResources(0, 2, emptySrvs);
 }
 
-void ProcessFrameGenerationMergingHalf(MergeParamStruct* pCb, uint32_t grid[])
+void ProcessFrameGenerationMergingTop(MergeParamStruct* pCb, uint32_t grid[])
 {
-    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::MergeHalf)], nullptr, 0);
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::MergeTop)], nullptr, 0);
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
@@ -1173,7 +1174,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
 
-            ProcessFrameGenerationMergingHalf(&cb, grid);
+            ProcessFrameGenerationMergingTop(&cb, grid);
         }
 
         {
@@ -1201,16 +1202,17 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             ProcessFrameGenerationMergingTip(&cb, grid);
         }
 
+        /*
         {
             // Push Pull Pass
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)],
                               7);
         }
+        */
 
         {
             // Gradient domain input calculation
-
         }
 
         {
@@ -1281,7 +1283,7 @@ int main()
         {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
         {ComputeShaderType::Advection,    "phsr_fg_advection.dxbc"},
-        {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },
+        {ComputeShaderType::MergeTop,    "phsr_fg_mergingtop.dxbc" },
         {ComputeShaderType::MergeTip,    "phsr_fg_mergingtip.dxbc" },
         {ComputeShaderType::FirstLeg,     "phsr_fg_firstleg.dxbc"    },
         {ComputeShaderType::Pull,         "phsr_fg_pulling.dxbc"     },
