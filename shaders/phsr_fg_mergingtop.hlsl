@@ -3,9 +3,12 @@
 //------------------------------------------------------- PARAMETERS
 RWTexture2D<uint> motionReprojHalfTopX;
 RWTexture2D<uint> motionReprojHalfTopY;
+RWTexture2D<uint> motionReprojFullTopX;
+RWTexture2D<uint> motionReprojFullTopY;
 
 RWTexture2D<float> depthReprojectedTop;
 RWTexture2D<float2> motionReprojHalfTop;
+RWTexture2D<float2> motionReprojFullTop;
 RWTexture2D<float3> colorReprojectedTop;
 
 Texture2D<float> currDepthUnprojected;
@@ -59,6 +62,25 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         motionTopRepSample = float2(ImpossibleMotionValue, ImpossibleMotionValue);
         depthTopRepSample = ImpossibleDepthValue;
     }
+    
+    uint fullTopX = motionReprojFullTopX[currentPixelIndex];
+    uint fullTopY = motionReprojFullTopY[currentPixelIndex];
+    int2 fullTopIndex = int2(fullTopX & IndexLast13DigitsMask, fullTopY & IndexLast13DigitsMask);
+    bool bIsFullTopUnwritten = any(fullTopIndex == UnwrittenIndexIndicator);
+    //float currDepthValue = currDepthUnprojected[halfTopIndex];
+    float2 motionVectorFullTop = currMotionUnprojected[fullTopIndex];
+    float2 samplePosFullTop = screenPos - motionVectorFullTop * tipTopDistance.x;
+    float2 motionCaliberatedUVFullTop = samplePosFullTop;
+    motionCaliberatedUVFullTop = clamp(motionCaliberatedUVFullTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+    //float depthFullTopRepSample = currDepthUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVFullTop, 0);
+    float2 motionFullTopRepSample = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVFullTop, 0);
+    //float3 colorFullTopRepSample = colorTextureTop.SampleLevel(bilinearClampedSampler, motionCaliberatedUVFullTop, 0);
+    if (bIsFullTopUnwritten)
+    {
+        //colorFullTopRepSample = float3(ImpossibleColorValue, ImpossibleColorValue, ImpossibleColorValue);
+        motionFullTopRepSample = float2(ImpossibleMotionValue, ImpossibleMotionValue);
+        //depthFullTopRepSample = ImpossibleDepthValue;
+    }
 	
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
@@ -66,6 +88,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             depthReprojectedTop[currentPixelIndex] = depthTopRepSample;
             motionReprojHalfTop[currentPixelIndex] = motionTopRepSample;
+            motionReprojFullTop[currentPixelIndex] = motionFullTopRepSample;
             colorReprojectedTop[currentPixelIndex] = colorTopRepSample;
         }
     }

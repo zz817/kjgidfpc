@@ -657,10 +657,12 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedHalfTipX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedHalfTipY)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopY)].uav
     };
 
-    g_pContext->CSSetUnorderedAccessViews(0, 4, ppUavs, nullptr);
+    g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Clearing)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -780,11 +782,14 @@ void ProcessFrameGenerationMergingTop(MergeParamStruct* pCb, uint32_t grid[])
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopY)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedTopDepth)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ColorReprojectedTop)].uav
     };
-    g_pContext->CSSetUnorderedAccessViews(0, 5, ppUavs, nullptr);
+    g_pContext->CSSetUnorderedAccessViews(0, 8, ppUavs, nullptr);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
@@ -817,6 +822,7 @@ void ProcessFrameGenerationMergingTip(MergeParamStruct* pCb, uint32_t grid[])
     ID3D11ShaderResourceView* ppSrvs[] = {
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevColor)].srv
     };
     g_pContext->CSSetShaderResources(0, 3, ppSrvs);

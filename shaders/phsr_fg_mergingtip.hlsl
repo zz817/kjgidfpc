@@ -3,13 +3,12 @@
 //------------------------------------------------------- PARAMETERS
 RWTexture2D<uint> motionAdvectHalfTipX;
 RWTexture2D<uint> motionAdvectHalfTipY;
-
 RWTexture2D<float> depthAdvectedTip;
-//RWTexture2D<float2> motionAdvectedTip;
 RWTexture2D<float3> colorAdvectedTip;
 
 Texture2D<float> prevDepthUnprojected;
-Texture2D<float2> motionReprojectedTop;
+Texture2D<float2> motionReprojectedHalfTop;
+Texture2D<float2> motionReprojectedFullTop;
 Texture2D<float3> colorTextureTip;
 
 cbuffer shaderConsts : register(b0)
@@ -47,7 +46,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 halfTipIndex = int2(halfTipX & IndexLast13DigitsMask, halfTipY & IndexLast13DigitsMask);
     bool bIsHalfTipUnwritten = any(halfTipIndex == UnwrittenIndexIndicator);
     //float currDepthValue = currDepthUnprojected[halfTopIndex];
-    float2 motionHalfTipAdv = motionReprojectedTop[halfTipIndex];
+    float2 motionHalfTipAdv = motionReprojectedHalfTop[halfTipIndex];
     float2 samplePosHalfTipAdv = screenPos + motionHalfTipAdv * distanceHalfTop;
     float2 caliberatedUVHalfTop = samplePosHalfTipAdv;
     caliberatedUVHalfTop = clamp(caliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
