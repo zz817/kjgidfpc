@@ -785,7 +785,7 @@ void ProcessFrameGenerationMergingTop(MergeParamStruct* pCb, uint32_t grid[])
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopY)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedTopDepth)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::DepthReprojectedTop)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ColorReprojectedTop)].uav
@@ -803,8 +803,8 @@ void ProcessFrameGenerationMergingTop(MergeParamStruct* pCb, uint32_t grid[])
 
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[5] = {nullptr};
-    g_pContext->CSSetUnorderedAccessViews(0, 5, emptyUavs, nullptr);
+    ID3D11UnorderedAccessView* emptyUavs[8] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 8, emptyUavs, nullptr);
     ID3D11ShaderResourceView* emptySrvs[3] = {nullptr};
     g_pContext->CSSetShaderResources(0, 3, emptySrvs);
 }
@@ -815,7 +815,7 @@ void ProcessFrameGenerationMergingTip(MergeParamStruct* pCb, uint32_t grid[])
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedHalfTipX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedHalfTipY)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedTipDepth)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::DepthAdvectedTip)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ColorAdvectedTip)].uav
     };
     g_pContext->CSSetUnorderedAccessViews(0, 4, ppUavs, nullptr);
@@ -1080,8 +1080,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
     ID3D11ShaderResourceView* ppSrvs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ColorReprojectedTop)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ColorAdvectedTip)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedTopDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedTipDepth)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::DepthReprojectedTop)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::DepthAdvectedTip)].srv
     };
     g_pContext->CSSetShaderResources(0, 4, ppSrvs);
 
@@ -1168,6 +1168,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+
             ProcessFrameGenerationReprojection(&cb, grid);
         }
 
@@ -1193,6 +1194,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+
             ProcessFrameGenerationAdvection(&cb, grid);
         }
 
@@ -1231,6 +1233,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+
             ProcessFrameGenerationResolution(&cb, grid);
         }
         g_pContext->End(endQuery);

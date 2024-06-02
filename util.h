@@ -55,8 +55,8 @@ enum class InternalResType : uint32_t {
   ReprojectedFullTop,
   ReprojectedFullTopFiltered,
 
-  ReprojectedTopDepth,
-  AdvectedTipDepth,
+  DepthReprojectedTop,
+  DepthAdvectedTip,
 
   OutputFinalDepth,
 
@@ -259,8 +259,8 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::PushedVectorLv6:
       return DXGI_FORMAT_R32G32_FLOAT;
 
-    case InternalResType::ReprojectedTopDepth:
-    case InternalResType::AdvectedTipDepth:
+    case InternalResType::DepthReprojectedTop:
+    case InternalResType::DepthAdvectedTip:
     case InternalResType::OutputFinalDepth:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::InpaintedDepthLv2:
@@ -295,8 +295,8 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::AdvectedHalfTipY:
     case InternalResType::ColorAdvectedTip:
     case InternalResType::ColorReprojectedTop:
-    case InternalResType::AdvectedTipDepth:
-    case InternalResType::ReprojectedTopDepth:
+    case InternalResType::DepthAdvectedTip:
+    case InternalResType::DepthReprojectedTop:
     case InternalResType::OutputFinalDepth:
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:

@@ -77,6 +77,13 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             uint originalValY;
             InterlockedMax(motionReprojHalfTopX[halfTopTracedIndex], packedAsUINTHigh19HalfTopX, originalValX);
             InterlockedMax(motionReprojHalfTopY[halfTopTracedIndex], packedAsUINTHigh19HalfTopY, originalValY);
+        }
+        
+        bool bIsValidFullTopPixel = all(fullTopTracedIndex < int2(dimensions)) && all(fullTopTracedIndex >= int2(0, 0));
+        if (bIsValidFullTopPixel)
+        {
+            uint originalValX;
+            uint originalValY;
             InterlockedMax(motionReprojFullTopX[fullTopTracedIndex], packedAsUINTHigh19FullTopX, originalValX);
             InterlockedMax(motionReprojFullTopY[fullTopTracedIndex], packedAsUINTHigh19FullTopY, originalValY);
         }
