@@ -749,9 +749,10 @@ void ProcessFrameGenerationAdvection(MVecParamStruct* pCb, uint32_t grid[])
 
     ID3D11ShaderResourceView* ppSrvs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv
     };
-    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+    g_pContext->CSSetShaderResources(0, 3, ppSrvs);
 
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::AdvectedHalfTipX)].uav,
@@ -825,7 +826,7 @@ void ProcessFrameGenerationMergingTip(MergeParamStruct* pCb, uint32_t grid[])
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevColor)].srv
     };
-    g_pContext->CSSetShaderResources(0, 3, ppSrvs);
+    g_pContext->CSSetShaderResources(0, 4, ppSrvs);
 
     g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
 
