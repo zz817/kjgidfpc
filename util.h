@@ -65,8 +65,8 @@ enum class InternalResType : uint32_t {
 
   CurrMevcFiltered,
   PrevMevcFiltered,
-  CurrMvecDuplicated,
-  PrevMvecDuplicated,
+  CurrMvecDilated,
+  PrevMvecDilated,
 
   MotionVectorLv1,
   MotionVectorLv2,
@@ -242,8 +242,8 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ReprojectedFullTopFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
-    case InternalResType::CurrMvecDuplicated:
-    case InternalResType::PrevMvecDuplicated:
+    case InternalResType::CurrMvecDilated:
+    case InternalResType::PrevMvecDilated:
     case InternalResType::MotionVectorLv1:
     case InternalResType::MotionVectorLv2:
     case InternalResType::MotionVectorLv3:
@@ -304,8 +304,8 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedFullTopFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
-    case InternalResType::CurrMvecDuplicated:
-    case InternalResType::PrevMvecDuplicated:
+    case InternalResType::CurrMvecDilated:
+    case InternalResType::PrevMvecDilated:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:

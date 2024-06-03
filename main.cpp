@@ -683,15 +683,16 @@ void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Normalizing)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrMevc)].srv,
-        InputResourceViewList[static_cast<uint32_t>(InputResType::PrevMevc)].srv};
-    g_pContext->CSSetShaderResources(0, 2, ppSrvs);
+        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrMevc)].srv
+        //InputResourceViewList[static_cast<uint32_t>(InputResType::PrevMevc)].srv
+    };
+    g_pContext->CSSetShaderResources(0, 1, ppSrvs);
 
     ID3D11UnorderedAccessView* ppUavs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDilated)].uav
+        //InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDilated)].uav,
     };
-    g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+    g_pContext->CSSetUnorderedAccessViews(0, 1, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Normalizing)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -702,10 +703,10 @@ void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_
 
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
-    g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
-    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
+    ID3D11ShaderResourceView* emptySrvs[1] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 1, emptySrvs);
 }
 
 void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
@@ -713,7 +714,7 @@ void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Reprojection)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDilated)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv
     };
     g_pContext->CSSetShaderResources(0, 2, ppSrvs);
@@ -794,7 +795,7 @@ void ProcessFrameGenerationMergingTop(MergeParamStruct* pCb, uint32_t grid[])
 
     ID3D11ShaderResourceView* ppSrvs[] = {
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDilated)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv
     };
     g_pContext->CSSetShaderResources(0, 3, ppSrvs);
@@ -1150,7 +1151,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         }
 
         {
-            // Normalizing
+            // Normalizing, Mvec dilated in this pass
             NormalizingConstParamStruct cb = {};
             memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
             memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
@@ -1159,8 +1160,6 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             ProcessFrameGenerationNormalizing(&cb, grid);
         }
 
-        // We should dilate the motion vectors here
-        // It's already in the following pass
         {
             // Reprojection
             MVecParamStruct cb = {};
