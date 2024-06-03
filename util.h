@@ -51,9 +51,9 @@ enum class InternalResType : uint32_t {
   AdvectedHalfTipY,
 
   ReprojectedHalfTop,
-  ReprojectedHalfTopFiltered,
+  ReprojectedHalfTopInpainted,
   ReprojectedFullTop,
-  ReprojectedFullTopFiltered,
+  ReprojectedFullTopInpainted,
 
   DepthReprojectedTop,
   DepthAdvectedTip,
@@ -237,9 +237,9 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
       return DXGI_FORMAT_R11G11B10_FLOAT;
 
     case InternalResType::ReprojectedHalfTop:
-    case InternalResType::ReprojectedHalfTopFiltered:
+    case InternalResType::ReprojectedHalfTopInpainted:
     case InternalResType::ReprojectedFullTop:
-    case InternalResType::ReprojectedFullTopFiltered:
+    case InternalResType::ReprojectedFullTopInpainted:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDilated:
@@ -299,9 +299,9 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::DepthReprojectedTop:
     case InternalResType::OutputFinalDepth:
     case InternalResType::ReprojectedHalfTop:
-    case InternalResType::ReprojectedHalfTopFiltered:
+    case InternalResType::ReprojectedHalfTopInpainted:
     case InternalResType::ReprojectedFullTop:
-    case InternalResType::ReprojectedFullTopFiltered:
+    case InternalResType::ReprojectedFullTopInpainted:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDilated:

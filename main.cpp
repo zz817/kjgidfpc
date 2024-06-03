@@ -749,8 +749,8 @@ void ProcessFrameGenerationAdvection(MVecParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Advection)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopInpainted)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopInpainted)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv
     };
     g_pContext->CSSetShaderResources(0, 3, ppSrvs);
@@ -772,8 +772,8 @@ void ProcessFrameGenerationAdvection(MVecParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
-    g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
+    ID3D11UnorderedAccessView* emptyUavs[3] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 3, emptyUavs, nullptr);
     ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
     g_pContext->CSSetShaderResources(0, 2, emptySrvs);
 }
@@ -1187,6 +1187,16 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         }
         // ColorTop, HalfTop and FullTop ready. FullTop will be used in advection after it's inpainted
         // FIXME: Should we add a pass to inpaint both HalfTop/FullTop before advection?
+
+        {
+            // Push Pull Pass to inpaint half and full top
+            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)],
+                              InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopInpainted)],
+                              7);
+            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedFullTop)],
+                              InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedFullTopInpainted)],
+                              7);
+		}
 
         {
             // Advection
