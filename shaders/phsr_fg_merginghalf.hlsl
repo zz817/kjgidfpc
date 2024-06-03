@@ -3,11 +3,16 @@
 //------------------------------------------------------- PARAMETERS
 RWTexture2D<uint> motionReprojHalfTopX;
 RWTexture2D<uint> motionReprojHalfTopY;
+RWTexture2D<uint> motionReprojHalfTipX;
+RWTexture2D<uint> motionReprojHalfTipY;
 
 RWTexture2D<float2> motionReprojectedTop;
+RWTexture2D<float2> motionReprojectedTip;
 
 Texture2D<float> currDepthUnprojected;
 Texture2D<float2> currMotionUnprojected;
+Texture2D<float> prevDepthUnprojected;
+Texture2D<float2> prevMotionUnprojected;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -37,6 +42,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 screenPos = viewportUV;
 	
     const float distanceHalfTop = tipTopDistance.y;
+    const float distanceHalfTip = tipTopDistance.x;
 	
     uint halfTopX = motionReprojHalfTopX[currentPixelIndex];
     uint halfTopY = motionReprojHalfTopY[currentPixelIndex];
@@ -52,12 +58,28 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         motionHalfTopCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
     }
+    
+    uint halfTipX = motionReprojHalfTipX[currentPixelIndex];
+    uint halfTipY = motionReprojHalfTipY[currentPixelIndex];
+    int2 halfTipIndex = int2(halfTipX & IndexLast13DigitsMask, halfTipY & IndexLast13DigitsMask);
+    bool bIsHalfTipUnwritten = any(halfTipIndex == UnwrittenIndexIndicator);
+    float prevDepthValue = prevDepthUnprojected[halfTipIndex];
+    float2 motionVectorHalfTip = prevMotionUnprojected[halfTipIndex];
+    float2 samplePosHalfTip = screenPos + motionVectorHalfTip * distanceHalfTip;
+    float2 motionCaliberatedUVHalfTip = samplePosHalfTip;
+    motionCaliberatedUVHalfTip = clamp(motionCaliberatedUVHalfTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+    float2 motionHalfTipCaliberated = prevMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTip, 0);
+    if (bIsHalfTipUnwritten)
+    {
+        motionHalfTipCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+    }
 	
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
             motionReprojectedTop[currentPixelIndex] = motionHalfTopCaliberated;
+            motionReprojectedTip[currentPixelIndex] = motionHalfTipCaliberated;
         }
     }
 }
