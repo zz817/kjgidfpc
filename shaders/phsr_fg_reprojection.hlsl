@@ -35,6 +35,23 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
     float2 mCurr = currMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    float2 mDilated = float2(0.0f, 0.0f);
+    float dilatedSamples = 0.0f;
+    for (int i = 0; i < subsampleCount9PointPatch; i++)
+    {
+        float2 elementUV = viewportUV + subsamplePixelOffset9PointPatch[i] * viewportInv;
+        float2 mElement = currMotionVector.SampleLevel(bilinearClampedSampler, elementUV, i);
+        if (abs(mElement.x) > abs(viewportInv.x) || abs(mElement.y) > abs(viewportInv.y))
+        {
+            mDilated += mElement;
+            dilatedSamples += 1.0f;
+        }
+    }
+    mDilated = mDilated * SafeRcp(dilatedSamples);
+    if (abs(mCurr.x) < abs(viewportInv.x) && abs(mCurr.y) < abs(viewportInv.y))
+    {
+        mCurr = mDilated;
+    }
     
     const float distanceFull = tipTopDistance.x + tipTopDistance.y;
     const float distanceHalfTip = tipTopDistance.x;

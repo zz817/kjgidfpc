@@ -1159,6 +1159,8 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             ProcessFrameGenerationNormalizing(&cb, grid);
         }
 
+        // We should dilate the motion vectors here
+        // It's already in the following pass
         {
             // Reprojection
             MVecParamStruct cb = {};
@@ -1184,6 +1186,8 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
             ProcessFrameGenerationMergingTop(&cb, grid);
         }
+        // ColorTop, HalfTop and FullTop ready. FullTop will be used in advection after it's inpainted
+        // FIXME: Should we add a pass to inpaint both HalfTop/FullTop before advection?
 
         {
             // Advection
