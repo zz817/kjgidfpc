@@ -10,6 +10,12 @@ The input of the algorithm consists of only the previous frame, the current fram
 
 The algorithm is implemented with DirectX compute shader and relies heavily on `atomicmax` operations. Device with DX11 or higher compatibilities is required.
 
+## Algorithm
+
+The core of the algorithm is essentially based on depth-aware reprojection along geometric motion vectors.
+
+To generate an interpolated frame in between two consecutive frames based on the geometric motions only, one core question arises naturally: For each pixel in the intermediate interpolated frame, where would its color come from? Is it the backtraced current frame pixel, or the fast-forwarded previous frame, or neither?
+
 ## Passes
 
 To generate intermediate frames, GeoMotionGen uses the process below to deduct the middle ground between two consecutive frames:
@@ -26,3 +32,8 @@ To generate intermediate frames, GeoMotionGen uses the process below to deduct t
 
 6. Fetch the pixels from both frames using the inpainted geometric motion vector and merge them into a new frame.
 
+## Detailed explanation of the passes
+
+### Clear
+
+Part of the geometry invisible (occluded) in the current frame might become visible in the interpolated frame. To decide which previously invisible pixels become visible when this backtracking happens, we need to maintain two buffers for reprojected geometric motion vectors. The criterion is quite simple: Those pixels that are written in reprojection phase are still visible 
