@@ -14,7 +14,11 @@ The algorithm is implemented with DirectX compute shader and relies heavily on `
 
 The core of the algorithm is essentially based on depth-aware reprojection along geometric motion vectors.
 
-To generate an interpolated frame in between two consecutive frames based on the geometric motions only, one core question arises naturally: For each pixel in the intermediate interpolated frame, where would its color come from? Is it the backtraced current frame pixel, or the fast-forwarded previous frame, or neither?
+To generate an interpolated frame in between two consecutive frames based on the geometric motions only, one core question arises naturally: For each pixel in the intermediate interpolated frame, where would its color come from? Is it the backtraced current frame pixel, or the fast-forwarded previous frame, or neither? Depth-aware reprojection answers the question by reprojecting current geometric motion to the middle ground, a.k.a. the interpolated frame's position along the geometric motion itself. If multiple pixels landed in the same middle ground pixel, pick the one closest to the camera because the other ones would simply be occluded. Once the reprojection phase is complete, we end up with a geometric motion vector reprojected to the intermediate frame's position, with patches of pixels remain unwritten. The unwritten pixels indicate that these pixels left their positions by reprojecting backwards, but no other pixels filled their positions, flagging a disocclusion happening. Do the same for the previous frame, and we have a disocclusion map of pixels for us to decide which pixels to use when it comes to merging two warped frames into one intermediate frame.
+
+To put it into actual formulas,
+
+Let `$p_n(x, y)$` denote pixels from newer (current) frame, and `$v_n(x, y)$`
 
 ## Passes
 
@@ -24,7 +28,7 @@ To generate intermediate frames, GeoMotionGen uses the process below to deduct t
 
 2. Convert the screen space geometric motion in pixels into normalized NDC space, ranging [0, 1].
 
-3. Reproject the geometric motion vector that points from current frame geometry to previous frame geometry to the middle ground position, with depth awareness
+3. Reproject the geometric motion vector that points from the current frame geometry to the previous frame geometry to the middle ground position, with depth awareness
 
 4. Resolve the geometric vectors at the middle ground position, and mark the disoccluded areas still with `UnwrittenPackedClearValue` as unknown.
 
