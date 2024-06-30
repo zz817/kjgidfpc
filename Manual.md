@@ -26,7 +26,13 @@ Once we have the reprojected buffer, we can derive both the reprojected motion v
 
 However, we are unable to use the same fashion to warp the previous frame to the middle ground, and determine the disocclusion from the previous frame to the middle ground, given that we don't have the geometric vector from the previous frame to the current frame, which is not just the inverse of the motion vector we have right now. What further complicates things is that, the reprojection is not a one-to-one mapping from the current frame to the intermediate frame. If the reprojection is being magnified while backtraced (i.e. the scene is getting zoomed out with time going forward) there would be multiple pixels in the middle ground mapped to just one pixel in the current (newer) frame. A lot of guesswork is involved in this process, which we call inpainting.
 
-To make an educated guess for each of the occluded areas and how they move from the previous frame to the current frame, we need to construct a pyramid of 
+To make an educated guess for each of the occluded areas and how they move from the previous frame to the current frame, we need to construct a pyramid of geometric vectors and fill the holes with elements from coarser layers. We call this a push-pull process, where "pulling" stands for moving up in the pyramid, constructing a coarser layer from its finer layer, and "pushing" stands for moving down in the pyramid, pushing the coarser elements into the finer layer where reprojection failed. This way we dissipate the reprojected geometric motion vector wider, and fill the holes too.
+
+Namely, for each finer `2x2` block of pixels containing geometric motion vectors, we downsample it by averaging all the valid elements (i.e. written in reprojection phase). If all 4 pixels are still `UnwrittenPackedClearValue`, we leave the downsampled pixel to `UnwrittenPackedClearValue` as well. Write the downsampled pixel to the coarser layer and repeat until all 7 layers of pyramid are fulfilled.
+
+Once the pyramid is ready, move top-down, starting from the coarsest level to its finer level. If a pixel in the finer level is already marked as written, either natively or from downsampled pyramid layer, we keep that written value untouched in the finer layer. If not, we fill the unwritten pixel with the coarser level pixel, be it unwritten or not, but still mark it as unwritten for the curious frame. This way we dissipate the motion vector around further, and the final merging pass knows that although the pixel reprojected from the current frame is no-longer usable due to disocclusion, it can still reverse the inpainted, dissipated motion vector and fetch a pixel from the previous frame instead.
+
+Ultimately, using this filled geometric vector, we can backtrace to the current frame and fetch a pixel to fill the intermediate frame when the reprojected geometric motion vector is marked unwritten. For those areas that are marked unwritten, we simply reverse the motion and trace forward to the previous frame, and grab a pixel there. This way, we can merge the previous frame and the current frame and fuse into one intermediate frame.
 
 ## Passes
 
@@ -48,4 +54,4 @@ To generate intermediate frames, GeoMotionGen uses the process below to deduct t
 
 ### Clear
 
-Part of the geometry invisible (occluded) in the current frame might become visible in the interpolated frame. To decide which previously invisible pixels become visible when this backtracking happens, we need to maintain two buffers for reprojected geometric motion vectors. The criterion is quite simple: Those pixels that are written in reprojection phase are still visible 
+Part of the geometry invisible (occluded) in the current frame might become visible in the interpolated frame. To decide which previously invisible pixels become visible when this backtracking happens, we need to maintain two buffers for reprojected geometric motion vectors simutaneously. The criterion is quite simple: Those pixels that are written in reprojection phase are still visible 
