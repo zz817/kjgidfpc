@@ -4,7 +4,7 @@
 
 The GeoMotionGen 1.0 is a frame-generating/interpolating technique that, given only geometric per-pixel motion from latest frame to its previous frame, generates interpolating frames in between. Given that the algorithm ditched the need for optical flow, it's particularly suitable for scenarios where computational cost is critical.
 
-The input of the algorithm consists of only the previous frame, the current frame, and the per-pixel geometric motion vectors, making it very easy to be integrated into games and other 3D applications, as well as popular game engines. There's a GeoMotionGen Unreal Engine plugin repo maintained actively for Unreal Engine 5.0.3 and beyond.
+The input of the algorithm consists of only the previous frame, the current frame, and the per-pixel geometric motion vectors, making it very easy to be intergrated into games and other 3D applications, as well as popular game engines. There's a GeoMotionGen Unreal Engine plugin repo maintained actively for Unreal Engine 5.0.3 and beyond.
 
 ## Requirements
 
@@ -18,7 +18,15 @@ To generate an interpolated frame in between two consecutive frames based on the
 
 To put it into actual formulas,
 
-Let `$p_n(x, y)$` denote pixels from newer (current) frame, and `$v_n(x, y)$`
+Let `$p_n(x, y)$` denote pixels from the newer (current) frame, and `$m_n(x, y)$` denote the geometric motion vector pointing from the current frame to the previous frame. Similarly, let `$d_n(x, y)$` denote the depth of the current pixel.
+
+From `$(x, y)$`, backtrace the middle ground position to `$(x, y) - 0.5 m_n(x, y)$`. Write the combination of the depth and the geometric motion vector's starting location indices to the reprojection buffer. Namely, we compress `$d_n(x, y)$` into a 19-bit floating point representation, and pack it with another 13 bits of integer `$(x, y)$` indices to form a 32bit binary, which is then written with `atomicmax()` to the texel indexed by `$(x, y) - 0.5 m_n(x, y)$` in the texture. This way we guarantee that even under parallelism we write the closest reprojected pixel to the backtraced position, given that floating point numbers increase monotonously when the underlying binary increases.
+
+Once we have the reprojected buffer, we can derive both the reprojected motion vector needed by the intermediate frame to fetch a pixel from the current frame, and the disocclusion mask: If a pixel is written, it's not occluded in the intermediate frame; If a pixel is left untouched, it's the pop-up pixel that suddenly becomes visible that was disoccluded in the previous frame, therefore not to be trusted. We need to grab the pixels from the previous frame instead of the current frame because these pixels are occluded and, consequently, unknown to the current frame.
+
+However, we are unable to use the same fashion to warp the previous frame to the middle ground, and determine the disocclusion from the previous frame to the middle ground, given that we don't have the geometric vector from the previous frame to the current frame, which is not just the inverse of the motion vector we have right now. What further complicates things is that, the reprojection is not a one-to-one mapping from the current frame to the intermediate frame. If the reprojection is being magnified while backtraced (i.e. the scene is getting zoomed out with time going forward) there would be multiple pixels in the middle ground mapped to just one pixel in the current (newer) frame. A lot of guesswork is involved in this process, which we call inpainting.
+
+To make an educated guess for each of the occluded areas and how they move from the previous frame to the current frame, we need to construct a pyramid of 
 
 ## Passes
 
