@@ -2,9 +2,9 @@
 
 ## Introduction
 
-The GeoMotionGen 1.0 is a frame-generating/interpolating technique that, given only geometric per-pixel motion from latest frame to its previous frame, generates interpolating frames in between. Given that the algorithm ditched the need for optical flow, it's particularly suitable for scenarios where computational cost is critical.
+The GeoMotionGen 1.0 is a frame-generating/interpolating technique that, given only geometric per-pixel motion from latest frame to its previous frame, generates interpolating frames in between. Given that the algorithm ditched the need for optical flow, it's particularly suitable for scenarios where computational cost is critical. To achieve maximum flexibility, GeoMotionGen also supports interpolating at any point between the previous and the current frame, making it possible for the swap chain to present multiple frames between two actual rendered frames. An insertion point for hardware-generated optical flow from video codecs is also prepared, in the event of GPU vendors wanting it as a backup criterion when it comes to estimating pixel movements.
 
-The input of the algorithm consists of only the previous frame, the current frame, and the per-pixel geometric motion vectors, making it very easy to be intergrated into games and other 3D applications, as well as popular game engines. There's a GeoMotionGen Unreal Engine plugin repo maintained actively for Unreal Engine 5.0.3 and beyond.
+The input of the algorithm consists of only the depth and color of the previous frame, the current frame, as well as the per-pixel geometric motion vector from this frame to previous frame, making it very easy to be integrated into games and other 3D applications, as well as popular game engines. There's a GeoMotionGen Unreal Engine plugin repo actively maintained for Unreal Engine 5.0.3 and beyond.
 
 ## Requirements
 
@@ -38,20 +38,37 @@ Ultimately, using this filled geometric vector, we can backtrace to the current 
 
 To generate intermediate frames, GeoMotionGen uses the process below to deduct the middle ground between two consecutive frames:
 
-1. Clear the disocclusion mask textures and set every texel to `UnwrittenPackedClearValue`.
+1. Clear
+Clear the disocclusion mask textures for both X and Y directions, and set every texel to `UnwrittenPackedClearValue`. For each interpolated frame, we need to clear the two buffers first before conducting any operations because we tell if the reprojection has succeeded by inspecting if it was written or not. Part of the geometry invisible (occluded) in the current frame might become visible in the interpolated frame. To decide which previously invisible pixels become visible when this backtracking happens, we need to maintain two buffers for reprojected geometric motion vectors simutaneously. The criterion is quite simple: Those pixels that are written in the reprojection phase are still visible, and those without anyone filling them, themselves included, are the pixels that become visible in the interpolated frame.
 
-2. Convert the screen space geometric motion in pixels into normalized NDC space, ranging [0, 1].
+2. Normalize
+Convert the screen space geometric motion in pixels into normalized NDC space, ranging [0, 1]. Since the definition for geometric motion vector varies from platform to platform, we need to convert them into our definition: Motion is per-pixel, normalized within [0, 1] range like it's a uv, in NDC coordinates, and points from the current frame geometry to that of the previous frame. The implementation of this pass varies from platform to platform.
 
-3. Reproject the geometric motion vector that points from the current frame geometry to the previous frame geometry to the middle ground position, with depth awareness
+3. Reproject
+Reproject the geometric motion vector that points from the current frame geometry to the previous frame geometry to the middle ground position, with depth awareness. Since multiple pixels might end up in the same position, we need to determine which pixel is the closest one to the camera, and pick exactly the one. To avoid race condition, we pack depth and indices into a 32bit integer, with first 19 bits being the depth, and last 13 bits being the index. The first 7 bits of the 19 bits being the exponential part, and the last 12 bits of the 19 bits being the mantissa of the floating point number of the depth. Under this customized 19 bit floating point format, we guarantee that depth comparison is maintained even if we reinterpret the binaries as integers. By packing both depth and index into a 32bit integer representation, we can safely write the closest one to the reprojection buffer using `atomicmax` without worrying about race conditions.
 
-4. Resolve the geometric vectors at the middle ground position, and mark the disoccluded areas still with `UnwrittenPackedClearValue` as unknown.
+Therefore, given that `$2**13=8192$`, our algorithm supports up to `$8192*8192$` resolution.
 
-5. Inpaint the geometric motion vector and do some guesswork to the disoccluded areas by building a pyramid and fill the unknown disoccluded areas with push-pulled motion vectors.
+4. Merge
+In the reprojection pass we pack the depth and the index of the motion vector together, not the depth and the motion vector itself, mainly to save bandwidth on the atomic operations, given that `atomic64` operations are only available to DX12 enabled devices. This merging pass extracts the indices from the 32 bit packed values, and reads the motion vector from the unprojected motion texture.
 
-6. Fetch the pixels from both frames using the inpainted geometric motion vector and merge them into a new frame.
+After this pass, we have the reprojected motion vectors.
 
-## Detailed explanation of the passes
+5. Pull
+Build the 7-layer pyramid from the reprojected motion vector full of holes and reprojection failures, starting from the finest layer and working all the way to the top. This process consists of 6 passes, and each pass takes in the finer reprojected motion, averages the valid, written motions within a `2x2` block, and writes the average to the coarser layer, essentially doing mipmapping. If none of the 4 pixels in the `2x2` were written, we mark the coarser layer's pixel as unwritten as well.
 
-### Clear
+6. Push
+From the mipmap pyramid, we push the coarser layer's pixels into the finer layer, if the finer layer's pixel is still unwritten. This process consists of 6 passes as well, but this time top-down, starting from the coarsest layer.
 
-Part of the geometry invisible (occluded) in the current frame might become visible in the interpolated frame. To decide which previously invisible pixels become visible when this backtracking happens, we need to maintain two buffers for reprojected geometric motion vectors simutaneously. The criterion is quite simple: Those pixels that are written in reprojection phase are still visible 
+After these passes we finally obtained the inpainted motion vectors, with occlusion masks. Those that are marked written are the pixels that are visible in both the generated frame and the current frame, and those that are marked unwritten would be the ones unseen in the current frame but become visible in the generated frame, but with a geometric motion vector as well.
+
+7. Resolution.
+At long last we resolve the generation process by fusing the two frames together. For each pixel, if the geometric vector is marked written, we do a backtrace along the geometric motion vector and fetch the current frame's pixel. Otherwise we read the geometric motion anyway because it's the guesswork of the previous push-pull inpainting passes, revert the motion direction, and fast-forward along the geometric motion vector, and fetch the previous frame's pixel.
+
+By doing this fusion, we have generated an interpolated frame from the current frame and the previous frame.
+
+## Limitations
+
+Since there's no optical flow input, there's no way the algorithm can detect non-geometrical movements, such as shadows, reflections, and pure texture changes without explicit geometry movements. This will be remedied by adding hardware-generated optical flow from video encoders to the algorithm's input, and the algorithm will treat the optical flow as a secondary criterion for pixel movements. One final per-pixel decision between geometric motion and optical flow will be made depending on how well the two traced pixels in the previous and the current frames match each other, and the one that produces more matching pixel pairs will be chosen to fuse the two frames together. To remedy this artifact without introducing dedicated hardware, draw the screen-space reflections and other post-processing passes after the frame is interpolated, and provide the algorithm with input frames that haven't undergone screen-space post-processing yet.
+
+The mipmap pyramid is limited to 7 layers, limiting the maximum dissipating distance of the geometric motion vector to 512 pixels. If the geometrical distance between the previous frame geometry and the interpolated frame is greater than 512 pixels, some of the geometry would simply refuse to be warped to the intermediate position, causing tearing artifacts in the final image.
