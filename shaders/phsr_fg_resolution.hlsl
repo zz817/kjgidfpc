@@ -5,11 +5,10 @@ Texture2D<float> depthTextureTip;
 Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
-//Texture2D<float2> currMotionUnprojected;
-//Texture2D<float2> prevMotionUnprojected;
-
 Texture2D<float2> motionReprojectedHalfTopPyr;
 Texture2D<float2> motionReprojectedHalfTopRaw;
+Texture2D<float2> motionReprojectedHalfTipPyr;
+Texture2D<float2> motionReprojectedHalfTipRaw;
 
 //Texture2D<float4> uiColorTexture;
 
@@ -56,6 +55,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 velocityProx = 0.0f;
     bool isProxTopVisible = false;
     float proxTopNorm = 0.0f;
+    float viableProxCount = 0.0f;
     for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
     {
         int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
@@ -67,8 +67,12 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float weight = gaussianDistributionWeightForVariance(offset, 3);
             velocityProx += velocityProxTopElement * weight;
             proxTopNorm += 1.0f * weight;
-            isProxTopVisible = true;
+            viableProxCount += 1.0f;
         }
+    }
+    if (viableProxCount > 0.5f * float(subsampleCount9PointPatch))
+    {
+        isProxTopVisible = true;
     }
     
     if (isProxTopVisible)
@@ -87,26 +91,48 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         velocityHalfPyr = 0.0f;
     }
+    float2 velocityHalfTip = motionReprojectedHalfTipPyr[currentPixelIndex];
+    if (any(velocityHalfTip >= ImpossibleMotionValue))
+    {
+        velocityHalfTip = 0.0f;
+    }
     
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
     float2 halfTipTranslation = distanceTip * velocityHalfPyr;
     float2 halfTopTranslation = distanceTop * velocityHalfRaw;
+    float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
 
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
+    float2 spareTracedScreenPos = screenPos - halfTopSpareTrans;
 
     float2 sampleUVTip = tipTracedScreenPos;
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 sampleUVTop = topTracedScreenPos;
     sampleUVTop = clamp(sampleUVTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+    //float2 sampleUVSpare = spareTracedScreenPos;
+    //sampleUVSpare = clamp(sampleUVSpare, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
 	
     float3 tipSample = colorTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float3 topSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
     float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
-	
+    //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
+    //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
+    
+    /*
+    if (any(abs(tipTracedScreenPos - sampleUVTip)) > 0.0f)
+    {
+        tipSample = 0.0f;
+    }
+    if (any(abs(topTracedScreenPos - sampleUVTop)) > 0.0f)
+    {
+        topSample = 0.0f;
+    }
+    */
+    
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
     {
@@ -118,6 +144,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     else
     {
+        //finalSample = spareDepth < tipDepth ? spareSample : tipSample;
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
