@@ -46,6 +46,8 @@ enum class InternalResType : uint32_t {
   ReprojectedHalfTopY,
   ReprojectedHalfTipX,
   ReprojectedHalfTipY,
+  ReprojectedFullTopX,
+  ReprojectedFullTopY,
 
   ReprojectedHalfTop,
   ReprojectedHalfTopFiltered,
@@ -185,10 +187,14 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ReprojectedHalfTopY:
     case InternalResType::ReprojectedHalfTipX:
     case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedFullTopX:
+    case InternalResType::ReprojectedFullTopY:
       return DXGI_FORMAT_R32_UINT;
 
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
+    case InternalResType::ReprojectedFullTop:
+    case InternalResType::ReprojectedFullTopFiltered:
     case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTipFiltered:
     case InternalResType::CurrMevcFiltered:
@@ -239,8 +245,12 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedHalfTopY:
     case InternalResType::ReprojectedHalfTipX:
     case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedFullTopX:
+    case InternalResType::ReprojectedFullTopY:
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
+    case InternalResType::ReprojectedFullTop:
+    case InternalResType::ReprojectedFullTopFiltered:
     case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTipFiltered:
     case InternalResType::CurrMevcFiltered:
