@@ -126,7 +126,7 @@ mtss_float HdrWeightY(mtss_float Color)
 {
     mtss_float Exposure = mtss_float(1.0);
 
-    return max(mtss_float(HDR_WEIGHT_SAFE_MIN_VALUE), rcp(Color * Exposure + mtss_float(4.0)));
+    return max(mtss_float(HDR_WEIGHT_SAFE_MIN_VALUE), rcp(float(Color * Exposure + mtss_float(4.0))));
 }
 
 mtss_float HdrWeightInvY(mtss_float Color)

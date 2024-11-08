@@ -8,15 +8,18 @@
 
 enum class ComputeShaderType : uint32_t {
   Clear,
-  Normalize,
-  Reproject,
-  Merge,
+  DFill,
   Filter,
   FirstLeg,
-  Pull,
   LastStretch,
+  MergeFullTop,
+  MergeHalfTT,
+  Normalize,
+  Pull,
   Push,
+  Reproject,
   Resolve,
+  Splat,
   Count
 };
 
@@ -46,6 +49,8 @@ enum class InternalResType : uint32_t {
 
   ReprojectedHalfTop,
   ReprojectedHalfTopFiltered,
+  ReprojectedFullTop,
+  ReprojectedFullTopFiltered,
   ReprojectedHalfTip,
   ReprojectedHalfTipFiltered,
 
@@ -89,11 +94,8 @@ enum class InternalResType : uint32_t {
 
 enum class ConstBufferType : uint32_t {
   Clearing,
-  Normalizing,
-  Mevc,
-  Merge,
+  Common,
   PushPull,
-  Resolution,
   Count
 };
 
@@ -119,30 +121,9 @@ struct ClipInfo {
 
 struct ClearingConstParamStruct {
   uint32_t dimensions[2];
-  float tipTopDistance[2];
-  float viewportSize[2];
-  float viewportInv[2];
 };
 
-struct NormalizingConstParamStruct
-{
-  uint32_t dimensions[2];
-  float    tipTopDistance[2];
-  float    viewportSize[2];
-  float    viewportInv[2];
-};
-
-struct MVecParamStruct {
-  float prevClipToClip[16];
-  float clipToPrevClip[16];
-
-  uint32_t dimensions[2];
-  float tipTopDistance[2];
-  float viewportSize[2];
-  float viewportInv[2];
-};
-
-struct MergeParamStruct {
+struct CommonParamStruct {
   float prevClipToClip[16];
   float clipToPrevClip[16];
 
@@ -178,16 +159,6 @@ struct PyramidParamStruct {
     viewportInv[0] *= 0.5f;
     viewportInv[1] *= 0.5f;
   };
-};
-
-struct ResolutionConstParamStruct {
-  float prevClipToClip[16];
-  float clipToPrevClip[16];
-
-  uint32_t dimensions[2];
-  float tipTopDistance[2];
-  float viewportSize[2];
-  float viewportInv[2];
 };
 
 struct ShaderInfo {
