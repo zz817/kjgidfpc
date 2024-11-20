@@ -1,8 +1,8 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-Texture2D<float2> motionVectorFiner;
-Texture2D<float2> motionVectorCoarser;
+Texture2D<float2> motionVectorFullTopFiltered;
+Texture2D<float2> motionVectorFullTopFilled;
 Texture2D<float> depthTextureTip;
 Texture2D<float> depthTextureCoarser;
 
