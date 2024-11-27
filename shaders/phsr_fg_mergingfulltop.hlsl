@@ -50,7 +50,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 motionFullTopCaliberated = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVFullTop, 0);
     if (bIsFullTopUnwritten)
     {
-        motionFullTopCaliberated = float2(0.0f, 0.0f);// + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+        motionFullTopCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
     }
 	
 	{

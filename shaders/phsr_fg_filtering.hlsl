@@ -1,18 +1,11 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-RWTexture2D<uint> motionReprojHalfTopX;
-RWTexture2D<uint> motionReprojHalfTopY;
-RWTexture2D<uint> motionReprojHalfTipX;
-RWTexture2D<uint> motionReprojHalfTipY;
+Texture2D<float2> motionReprojectedTop;
+Texture2D<float2> motionReprojectedTip;
 
-RWTexture2D<float2> motionReprojectedTop;
-RWTexture2D<float2> motionReprojectedTip;
-
-Texture2D<float> currDepthUnprojected;
-Texture2D<float2> currMotionUnprojected;
-Texture2D<float> prevDepthUnprojected;
-Texture2D<float2> prevMotionUnprojected;
+RWTexture2D<float2> motionReprojectedTopFiltered;
+RWTexture2D<float2> motionReprojectedTipFiltered;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -43,43 +36,111 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 	
     const float distanceHalfTop = tipTopDistance.y;
     const float distanceHalfTip = tipTopDistance.x;
-	
-    uint halfTopX = motionReprojHalfTopX[currentPixelIndex];
-    uint halfTopY = motionReprojHalfTopY[currentPixelIndex];
-    int2 halfTopIndex = int2(halfTopX & IndexLast13DigitsMask, halfTopY & IndexLast13DigitsMask);
-    bool bIsHalfTopUnwritten = any(halfTopIndex == UnwrittenIndexIndicator);
-    float currDepthValue = currDepthUnprojected[halfTopIndex];
-    float2 motionVectorHalfTop = currMotionUnprojected[halfTopIndex];
-    float2 samplePosHalfTop = screenPos - motionVectorHalfTop * distanceHalfTop;
-    float2 motionCaliberatedUVHalfTop = samplePosHalfTop;
-    motionCaliberatedUVHalfTop = clamp(motionCaliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float2 motionHalfTopCaliberated = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
-    if (bIsHalfTopUnwritten)
+
+    float2 motionHalfTopRaw[THREE_BY_THREE_PATCH_SIZE];
+    float2 motionHalfTipRaw[THREE_BY_THREE_PATCH_SIZE];
+    bool   motionHalfTopInvisible[THREE_BY_THREE_PATCH_SIZE];
+    bool   motionHalfTipInvisible[THREE_BY_THREE_PATCH_SIZE];
     {
-        motionHalfTopCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+        for (int patchIndex = 0; patchIndex < subsampleCount9PointPatch; ++patchIndex)
+        {
+            int2 patchOffset                = subsamplePixelOffset9PointPatch[patchIndex];
+            int2   patchPixelIndex          = currentPixelIndex + patchOffset;
+            motionHalfTopRaw[patchIndex]    = motionReprojectedTop[patchPixelIndex];
+            motionHalfTipRaw[patchIndex]    = motionReprojectedTip[patchPixelIndex];
+            bool bIsHalfTopInvisible     = any(motionHalfTopRaw[patchIndex] >= ImpossibleMotionValue) ? true : false;
+            bool bIsHalfTipInvisible     = any(motionHalfTipRaw[patchIndex] >= ImpossibleMotionValue) ? true : false;
+            motionHalfTopInvisible[patchIndex] = bIsHalfTopInvisible;
+            motionHalfTipInvisible[patchIndex] = bIsHalfTipInvisible;
+        }
+    }
+    int topGapSamples = 0;
+    int tipGapSamples = 0;
+    int topClosestIndex = 0;
+    int tipClosestIndex = 0;
+    float topClosestDistance = 1000000.0f;
+    float tipClosestDistance = 1000000.0f;
+    {
+        for (int patchIndex = 0; patchIndex < subsampleCount9PointPatch; ++patchIndex)
+        {
+            float2 mvHTopRaw           = motionHalfTopRaw[patchIndex];
+            float2 mvHTipRaw           = motionHalfTipRaw[patchIndex];
+            bool   bIsHalfTopInvisible = motionHalfTopInvisible[patchIndex];
+            bool   bIsHalfTipInvisible = motionHalfTipInvisible[patchIndex];
+            
+            if (bIsHalfTopInvisible)
+            {
+                topGapSamples++;
+            }
+            if (bIsHalfTipInvisible)
+            {
+                tipGapSamples++;
+            }
+            float topDistance = 0.0f;
+            float tipDistance = 0.0f;
+            for (int innerLoop = 0; innerLoop < subsampleCount9PointPatch; ++innerLoop)
+            {
+                if (!motionHalfTopInvisible[innerLoop])
+                {
+                    topDistance += length(mvHTopRaw - motionHalfTopRaw[innerLoop]);
+                }
+                if (!motionHalfTipInvisible[innerLoop])
+                {
+                    tipDistance += length(mvHTipRaw - motionHalfTipRaw[innerLoop]);
+                }
+            }
+            if (topDistance < topClosestDistance)
+            {
+                topClosestDistance = topDistance;
+                topClosestIndex    = patchIndex;
+            }
+            if (tipDistance < tipClosestDistance)
+            {
+                tipClosestDistance = tipDistance;
+                tipClosestIndex    = patchIndex;
+            }
+        }
     }
     
-    uint halfTipX = motionReprojHalfTipX[currentPixelIndex];
-    uint halfTipY = motionReprojHalfTipY[currentPixelIndex];
-    int2 halfTipIndex = int2(halfTipX & IndexLast13DigitsMask, halfTipY & IndexLast13DigitsMask);
-    bool bIsHalfTipUnwritten = any(halfTipIndex == UnwrittenIndexIndicator);
-    float prevDepthValue = prevDepthUnprojected[halfTipIndex];
-    float2 motionVectorHalfTip = prevMotionUnprojected[halfTipIndex];
-    float2 samplePosHalfTip = screenPos + motionVectorHalfTip * distanceHalfTip;
-    float2 motionCaliberatedUVHalfTip = samplePosHalfTip;
-    motionCaliberatedUVHalfTip = clamp(motionCaliberatedUVHalfTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float2 motionHalfTipCaliberated = prevMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTip, 0);
-    if (bIsHalfTipUnwritten)
-    {
-        motionHalfTipCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-    }
-	
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            motionReprojectedTop[currentPixelIndex] = motionHalfTopCaliberated;
-            motionReprojectedTip[currentPixelIndex] = motionHalfTipCaliberated;
+            bool bIsHalfTopInvisible = any(motionHalfTopRaw[0] >= ImpossibleMotionValue) ? true : false;
+            bool bIsHalfTipInvisible = any(motionHalfTipRaw[0] >= ImpossibleMotionValue) ? true : false;
+
+            float2 impossibleMvec = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+
+            if (bIsHalfTopInvisible)
+            {
+                if (topGapSamples >= 5)
+                {
+                    motionReprojectedTopFiltered[currentPixelIndex] = motionHalfTopRaw[topClosestIndex];
+                }
+                else
+                {
+                    motionReprojectedTopFiltered[currentPixelIndex] = impossibleMvec;
+                }
+            }
+            else
+            {
+                motionReprojectedTopFiltered[currentPixelIndex] = motionHalfTopRaw[0];
+            }
+            if (bIsHalfTipInvisible)
+            {
+                if (tipGapSamples >= 5)
+                {
+                    motionReprojectedTipFiltered[currentPixelIndex] = motionHalfTipRaw[tipClosestIndex];
+                }
+                else
+                {
+                    motionReprojectedTipFiltered[currentPixelIndex] = impossibleMvec;
+                }
+            }
+            else
+            {
+                motionReprojectedTipFiltered[currentPixelIndex] = motionHalfTipRaw[0];
+            }
         }
     }
 }

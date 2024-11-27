@@ -9,9 +9,9 @@ RWTexture2D<uint> motionReprojHalfTipY;
 RWTexture2D<float2> motionReprojectedTop;
 RWTexture2D<float2> motionReprojectedTip;
 
-Texture2D<float> currDepthUnprojected;
+//Texture2D<float> currDepthUnprojected;
 Texture2D<float2> currMotionUnprojected;
-Texture2D<float> prevDepthUnprojected;
+//Texture2D<float> prevDepthUnprojected;
 Texture2D<float2> prevMotionUnprojected;
 
 cbuffer shaderConsts : register(b0)
@@ -48,7 +48,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     uint halfTopY = motionReprojHalfTopY[currentPixelIndex];
     int2 halfTopIndex = int2(halfTopX & IndexLast13DigitsMask, halfTopY & IndexLast13DigitsMask);
     bool bIsHalfTopUnwritten = any(halfTopIndex == UnwrittenIndexIndicator);
-    float currDepthValue = currDepthUnprojected[halfTopIndex];
+    //float currDepthValue = currDepthUnprojected[halfTopIndex];
     float2 motionVectorHalfTop = currMotionUnprojected[halfTopIndex];
     float2 samplePosHalfTop = screenPos - motionVectorHalfTop * distanceHalfTop;
     float2 motionCaliberatedUVHalfTop = samplePosHalfTop;
@@ -63,7 +63,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     uint halfTipY = motionReprojHalfTipY[currentPixelIndex];
     int2 halfTipIndex = int2(halfTipX & IndexLast13DigitsMask, halfTipY & IndexLast13DigitsMask);
     bool bIsHalfTipUnwritten = any(halfTipIndex == UnwrittenIndexIndicator);
-    float prevDepthValue = prevDepthUnprojected[halfTipIndex];
+    //float prevDepthValue = prevDepthUnprojected[halfTipIndex];
     float2 motionVectorHalfTip = prevMotionUnprojected[halfTipIndex];
     float2 samplePosHalfTip = screenPos + motionVectorHalfTip * distanceHalfTip;
     float2 motionCaliberatedUVHalfTip = samplePosHalfTip;
