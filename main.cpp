@@ -1211,7 +1211,7 @@ void ProcessFrameGenerationResolution(CommonParamStruct* pCb, uint32_t grid[])
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].srv
@@ -1272,10 +1272,14 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             // Clearing
             ClearingConstParamStruct cb = {};
             memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
+            cb.paddingVal[0] = 0;
+            cb.paddingVal[1] = 0;
             ProcessFrameGenerationClearing(&cb, grid);
         }
 
         CommonParamStruct cb = {};
+        memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
+        memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
         memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
         memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
         memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));

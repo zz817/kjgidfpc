@@ -51,13 +51,16 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
-    float2 velocityHalfTop = motionReprojectedHalfTopPyr[currentPixelIndex];
-    bool   isTopInvisible  = any(velocityHalfTop >= ImpossibleMotionValue) ? true : false;
-    bool   isTopVisible    = !isTopInvisible;
+    float2 velocityHalfTopRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
+    bool   isTopInvisible = any(velocityHalfTopRaw >= ImpossibleMotionValue) ? true : false;
+    bool   isTopVisible = !isTopInvisible;
 
+    float2 velocityHalfTipRaw = motionReprojectedHalfTipRaw[currentPixelIndex];
+    bool   isTipInvisible = any(velocityHalfTipRaw >= ImpossibleMotionValue) ? true : false;
+    bool   isTipVisible = !isTipInvisible;
+
+    float2 velocityHalfTop = motionReprojectedHalfTopPyr[currentPixelIndex];
     float2 velocityHalfTip = motionReprojectedHalfTipPyr[currentPixelIndex];
-    bool   isTipInvisible  = any(velocityHalfTip >= ImpossibleMotionValue) ? true : false;
-    bool   isTipVisible    = !isTipInvisible;
 
     float2 halfTipTranslation = distanceTip * velocityHalfTip;
     float2 halfTopTranslation = distanceTop * velocityHalfTop;
@@ -94,7 +97,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
 
-    finalSample = float3(abs(motionReprojectedHalfTopPyr[currentPixelIndex]), 0.0f);
+    //finalSample = float3(abs(motionReprojectedHalfTipPyr[currentPixelIndex]), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);

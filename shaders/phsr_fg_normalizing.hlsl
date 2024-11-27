@@ -8,6 +8,9 @@ RWTexture2D<float2> prevMvecNorm;
 
 cbuffer shaderConsts : register(b0)
 {
+    float4x4 prevClipToClip;
+    float4x4 clipToPrevClip;
+
     uint2 dimensions;
     float2 distance;
     float2 viewportSize;
