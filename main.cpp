@@ -10,6 +10,8 @@
 #include <vector>
 #include <iostream>
 
+#include <cassert>
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image.h"
@@ -236,18 +238,22 @@ HRESULT InitStagingResources(int width, int height)
     desc.Usage                = D3D11_USAGE_STAGING;
 
     hr = g_pDevice->CreateTexture2D(&desc, nullptr, &StagResourceList[static_cast<size_t>(StagResType::ColorInput)]);
+    assert(hr == S_OK);
     hr = g_pDevice->CreateTexture2D(&desc, nullptr, &StagResourceList[static_cast<size_t>(StagResType::ColorOutput)]);
+    assert(hr == S_OK);
 
     if (SUCCEEDED(hr))
     {
         desc.Format = g_configInfo.mevcFormat;
         hr = g_pDevice->CreateTexture2D(&desc, nullptr, &StagResourceList[static_cast<size_t>(StagResType::Mevc)]);
+        assert(hr == S_OK);
     }
 
     if (SUCCEEDED(hr))
     {
         desc.Format = g_configInfo.depthFormat;
         hr = g_pDevice->CreateTexture2D(&desc, nullptr, &StagResourceList[static_cast<size_t>(StagResType::Depth)]);
+        assert(hr == S_OK);
     }
 
     return hr;
@@ -282,6 +288,7 @@ HRESULT InitAlgoResources(int width, int height)
             srvDesc.Texture2D.MostDetailedMip       = 0;
 
             hr = g_pDevice->CreateShaderResourceView(res, &srvDesc, &resView.srv);
+            assert(hr == S_OK);
         }
 
         if (desc.BindFlags & D3D11_BIND_UNORDERED_ACCESS)
@@ -291,9 +298,11 @@ HRESULT InitAlgoResources(int width, int height)
             uavDesc.ViewDimension                    = D3D11_UAV_DIMENSION_TEXTURE2D;
             uavDesc.Texture2D.MipSlice               = 0;
 
+            assert(hr == S_OK);
             if (SUCCEEDED(hr))
             {
                 hr = g_pDevice->CreateUnorderedAccessView(res, &uavDesc, &resView.uav);
+                assert(hr == S_OK);
             }
         }
 
@@ -332,6 +341,7 @@ HRESULT InitAlgoResources(int width, int height)
         {
             hr = createViewFunc(InputResourceList[static_cast<size_t>(i)],
                                 InputResourceViewList[static_cast<size_t>(i)]);
+            assert(hr == S_OK);
         }
     }
 
@@ -403,6 +413,7 @@ HRESULT InitAlgoResources(int width, int height)
         hr                = g_pDevice->CreateBuffer(&bufDesc,
                                      nullptr,
                                      &ConstantBufferList[i]);
+        assert(hr == S_OK);
     }
 
     return hr;
@@ -458,6 +469,7 @@ HRESULT InitSamplerList()
             D3D11_FLOAT32_MAX,
         };
         hr  = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::PointClamp)]);
+        assert(hr == S_OK);
     }
 
     {
@@ -474,6 +486,7 @@ HRESULT InitSamplerList()
             D3D11_FLOAT32_MAX,
         };
         hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::PointMirror)]);
+        assert(hr == S_OK);
     }
 
     {
@@ -491,6 +504,7 @@ HRESULT InitSamplerList()
         };
 
         hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
+        assert(hr == S_OK);
     }
 
     {
@@ -508,6 +522,7 @@ HRESULT InitSamplerList()
         };
 
         hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::LinearMirror)]);
+        assert(hr == S_OK);
     }
 
     {
@@ -525,6 +540,7 @@ HRESULT InitSamplerList()
         };
 
         hr = g_pDevice->CreateSamplerState(&sampDesc, &SamplerList[static_cast<uint32_t>(SamplerType::AnisoClamp)]);
+        assert(hr == S_OK);
     }
 
     return hr;
@@ -539,6 +555,7 @@ HRESULT CreateComputeShader(ID3D11ComputeShader** ppShader, const std::string& d
         std::vector<uint8_t> result = AcquireFileContent(dxbcFile);
         hr = g_pDevice->CreateComputeShader(static_cast<void*>(result.data()), result.size(), nullptr, ppShader);
     }
+    assert(hr == S_OK);
     return hr;
 }
 
@@ -770,6 +787,7 @@ void ProcessFrameGenerationMergingFullTop(CommonParamStruct* pCb, uint32_t grid[
     }
 }
 
+/*
 void ProcessFrameGenerationDFilling(CommonParamStruct* pCb, uint32_t grid[]) // D-Fill the reprojected top mv
 {
     {
@@ -806,6 +824,7 @@ void ProcessFrameGenerationDFilling(CommonParamStruct* pCb, uint32_t grid[]) // 
         g_pContext->CSSetShaderResources(0, 4, emptySrvs);
     }
 }
+*/
 
 void AddPullPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
 {
@@ -1130,8 +1149,8 @@ void ProcessFrameGenerationMergingHalfTT(CommonParamStruct* pCb, uint32_t grid[]
     g_pContext->CSSetUnorderedAccessViews(0, 6, ppUavs, nullptr);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrMevc)].srv,
-        InputResourceViewList[static_cast<uint32_t>(InputResType::PrevMevc)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)].srv,
     };
     g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
@@ -1156,14 +1175,14 @@ void ProcessFrameGenerationFiltering(CommonParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Filter)], nullptr, 0);
 
     ID3D11UnorderedAccessView* ppUavs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].uav
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].uav
     };
     g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].srv
     };
     g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
@@ -1192,7 +1211,7 @@ void ProcessFrameGenerationResolution(CommonParamStruct* pCb, uint32_t grid[])
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].srv
@@ -1248,6 +1267,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         g_pDevice->CreateQuery(&disjointDesc, &disjointQuery);
         g_pContext->Begin(disjointQuery);
         g_pContext->End(startQuery);
+
         {
             // Clearing
             ClearingConstParamStruct cb = {};
@@ -1360,7 +1380,7 @@ int main()
 
     std::vector<ShaderInfo> shaderList = {
         {ComputeShaderType::Clear,        "phsr_fg_clearing.dxbc"      },
-        {ComputeShaderType::DFill,        "phsr_fg_dfilling.dxbc"      },
+        //{ComputeShaderType::DFill,        "phsr_fg_dfilling.dxbc"      },
         {ComputeShaderType::Filter,       "phsr_fg_filtering.dxbc"     },
         {ComputeShaderType::FirstLeg,     "phsr_fg_firstleg.dxbc"      },
         {ComputeShaderType::LastStretch,  "phsr_fg_laststretch.dxbc"   },

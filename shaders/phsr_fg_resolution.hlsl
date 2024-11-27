@@ -94,6 +94,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
 
+    finalSample = float3(abs(motionReprojectedHalfTopPyr[currentPixelIndex]), 0.0f);
+
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
