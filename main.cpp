@@ -688,7 +688,6 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
     ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
-
     g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
 }
 
@@ -1179,7 +1178,7 @@ void ProcessFrameGenerationFiltering(CommonParamStruct* pCb, uint32_t grid[])
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].uav
     };
     g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
-
+    
     ID3D11ShaderResourceView* ppSrvs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].srv
@@ -1196,10 +1195,10 @@ void ProcessFrameGenerationFiltering(CommonParamStruct* pCb, uint32_t grid[])
     g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, nullptr);
-    ID3D11ShaderResourceView* emptySrvs[6] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 6, emptySrvs);
+    ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
+    ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 2, emptySrvs);
 }
 
 void ProcessFrameGenerationResolution(CommonParamStruct* pCb, uint32_t grid[])
@@ -1331,7 +1330,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             ProcessFrameGenerationResolution(&cb, grid);
         }
         g_pContext->End(endQuery);
-        g_pContext->End(disjointQuery);
+        g_pContext->End(disjointQuery); // End the disjoint query 
 
         D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
         UINT64                              startTime = 0;

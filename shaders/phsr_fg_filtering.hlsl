@@ -142,5 +142,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
                 motionReprojectedTipFiltered[currentPixelIndex] = motionHalfTipRaw[0];
             }
         }
+
+        motionReprojectedTopFiltered[currentPixelIndex] = motionHalfTopRaw[topClosestIndex];
+        motionReprojectedTipFiltered[currentPixelIndex] = motionHalfTipRaw[tipClosestIndex];
     }
 }

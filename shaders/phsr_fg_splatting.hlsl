@@ -47,7 +47,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     
     float2 fullTopTranslation = mCurr * distanceFull;
     float2 fullTopTracedScreenPos = screenPos + fullTopTranslation;
-    int2 fullTopTracedIndex = floor(fullTopTracedScreenPos * viewportSize);
     float2 fullTopTracedUV = clamp(fullTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 mPrev = prevMotionVector.SampleLevel(bilinearClampedSampler, fullTopTracedUV, 0);
     
