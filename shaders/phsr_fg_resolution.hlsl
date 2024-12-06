@@ -100,9 +100,9 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
-    float2 halfTipTranslation = distanceTip * velocityHalfPyr;
-    float2 halfTopTranslation = distanceTop * velocityHalfRaw;
-    float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
+    float2 halfTipTranslation = velocityHalfPyr;
+    float2 halfTopTranslation = velocityHalfRaw;
+    float2 halfTopSpareTrans = velocityHalfPyr;
 
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
