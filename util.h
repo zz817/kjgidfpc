@@ -9,17 +9,15 @@
 enum class ComputeShaderType : uint32_t {
   Clear,
   Normalizing,
+  BackTracking,
   Reprojection,
-  MergeHalf,
+  MergeRend,
   MergeFull,
   FirstLeg,
   Pull,
   LastStretch,
   Push,
   Resolution,
-  AxPb,
-  Multiply,
-  InnerProduct,
   Count
 };
 
@@ -46,11 +44,15 @@ enum class InternalResType : uint32_t {
   ReprojectedHalfTopY,
   ReprojectedHalfTipX,
   ReprojectedHalfTipY,
+  ReprojectedFullX,
+  ReprojectedFullY,
 
   ReprojectedHalfTop,
   ReprojectedHalfTopFiltered,
   ReprojectedHalfTip,
   ReprojectedHalfTipFiltered,
+  ReprojectedFull,
+  ReprojectedFullFiltered,
 
   CurrMevcFiltered,
   PrevMevcFiltered,
@@ -217,12 +219,16 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ReprojectedHalfTopY:
     case InternalResType::ReprojectedHalfTipX:
     case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedFullX:
+    case InternalResType::ReprojectedFullY:
       return DXGI_FORMAT_R32_UINT;
 
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTipFiltered:
+    case InternalResType::ReprojectedFull:
+    case InternalResType::ReprojectedFullFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDuplicated:
@@ -271,10 +277,14 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedHalfTopY:
     case InternalResType::ReprojectedHalfTipX:
     case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedFullX:
+    case InternalResType::ReprojectedFullY:
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::ReprojectedHalfTip:
     case InternalResType::ReprojectedHalfTipFiltered:
+    case InternalResType::ReprojectedFull:
+    case InternalResType::ReprojectedFullFiltered:
     case InternalResType::CurrMevcFiltered:
     case InternalResType::PrevMevcFiltered:
     case InternalResType::CurrMvecDuplicated:

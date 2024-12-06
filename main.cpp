@@ -656,9 +656,11 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipY)].uav
     };
 
-    g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+    g_pContext->CSSetUnorderedAccessViews(0, 4, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Clearing)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -669,9 +671,8 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
-
-    g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
+    ID3D11UnorderedAccessView* emptyUavs[4] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 4, emptyUavs, nullptr);
 }
 
 void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_t grid[])
@@ -695,13 +696,49 @@ void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_
     memcpy(mapped.pData, pCb, mapped.RowPitch);
     g_pContext->Unmap(buf, 0);
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
-
+    
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
     ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
     g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
     ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
     g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+}
+
+//Generates Full
+void ProcessFrameGenerationBacktracking(MVecParamStruct* pCb, uint32_t grid[])
+{
+    g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::BackTracking)], nullptr, 0);
+
+    ID3D11ShaderResourceView* ppSrvs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+        InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
+        InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv};
+    g_pContext->CSSetShaderResources(0, 4, ppSrvs);
+
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipY)].uav};
+
+    g_pContext->CSSetUnorderedAccessViews(0, 4, ppUavs, nullptr);
+
+    ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Mevc)];
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    memcpy(mapped.pData, pCb, mapped.RowPitch);
+    g_pContext->Unmap(buf, 0);
+
+    g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
+    g_pContext->CSSetConstantBuffers(0, 1, &buf);
+    g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+    ID3D11UnorderedAccessView* emptyUavs[4] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 4, emptyUavs, nullptr);
+    ID3D11ShaderResourceView* emptySrvs[4] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 4, emptySrvs);
 }
 
 void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
@@ -743,7 +780,7 @@ void ProcessFrameGenerationReprojection(MVecParamStruct* pCb, uint32_t grid[])
 void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
 {
     {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::MergeHalf)], nullptr, 0);
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::MergeRend)], nullptr, 0);
         ID3D11UnorderedAccessView* ppUavs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
@@ -866,6 +903,7 @@ void AddPushPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
     }
 }
 
+/*
 void CopyLayers(const int layer, const PyramidParamStruct& ppParameters)
 {
     ID3D11Buffer* buf        = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)];
@@ -900,6 +938,7 @@ void CopyLayers(const int layer, const PyramidParamStruct& ppParameters)
         g_pContext->CSSetShaderResources(0, 1, emptySrvs);
     }
 }
+*/
 
 void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const int layers)
 {
@@ -1066,7 +1105,7 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
     g_pContext->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
     memcpy(mapped.pData, pCb, mapped.RowPitch);
     g_pContext->Unmap(buf, 0);
-
+    
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
     g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
@@ -1155,13 +1194,15 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         {
             // Push Pull Pass
+            /*
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)],
                               7);
-            /*
+            */
+
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)],
-                              7);*/
+                              7);
         }
 
         {
@@ -1229,10 +1270,11 @@ int main()
 
     std::vector<ShaderInfo> shaderList = {
         {ComputeShaderType::Clear,        "phsr_fg_clearing.dxbc"    },
+        {ComputeShaderType::BackTracking, "phsr_fg_backtracking.dxbc" },
         {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
-        {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },
-        //{ComputeShaderType::MergeFull,    "phsr_fg_mergingfull.dxbc" },
+        {ComputeShaderType::MergeRend,    "phsr_fg_mergingrend.dxbc" },
+        {ComputeShaderType::MergeFull,    "phsr_fg_mergingfull.dxbc" },
         {ComputeShaderType::FirstLeg,     "phsr_fg_firstleg.dxbc"    },
         {ComputeShaderType::Pull,         "phsr_fg_pulling.dxbc"     },
         {ComputeShaderType::LastStretch,  "phsr_fg_laststretch.dxbc" },

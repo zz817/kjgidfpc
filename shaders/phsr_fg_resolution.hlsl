@@ -100,7 +100,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
-    float2 halfTipTranslation = distanceTip * velocityHalfPyr;
+    float2 halfTipTranslation = -2.0f * velocityHalfTip;
     float2 halfTopTranslation = distanceTop * velocityHalfRaw;
     float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
 
@@ -151,6 +151,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         //finalSample = float3(halfTipTranslation, 0.0f);
 #endif
     }
+
+    //finalSample = float3(abs(velocityHalfTip), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
