@@ -47,24 +47,16 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 halfTopTranslation = mCurr * distanceHalfTop;
     float2 halfTopTracedScreenPos = screenPos + halfTopTranslation;
     int2 halfTopTracedIndex = floor(halfTopTracedScreenPos * viewportSize);
-    float2 halfTopTracedFloatCenter = float2(halfTopTracedIndex) + float2(0.5f, 0.5f);	
-    float2 halfTopTracedPos = halfTopTracedFloatCenter * viewportInv;
-    float2 samplePosHalfTop = halfTopTracedPos - halfTopTranslation;
-    float2 sampleUVHalfTop = samplePosHalfTop;
-    sampleUVHalfTop = clamp(sampleUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float halfTopDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
+    
+    float halfTopDepth             = depthTextureTop.SampleLevel(bilinearClampedSampler, viewportUV, 0);
     uint halfTopDepthAsUIntHigh19 = compressDepth(halfTopDepth);
     
     //Tip interpolation, guesswork, unproven, untrusted <-
     float2 halfTipTranslation = mPrev * distanceHalfTip;
     float2 halfTipTracedScreenPos = screenPos - halfTipTranslation;
     int2 halfTipTracedIndex = floor(halfTipTracedScreenPos * viewportSize);
-    float2 halfTipTracedFloatCenter = float2(halfTipTracedIndex) + float2(0.5f, 0.5f);
-    float2 halfTipTracedPos = halfTipTracedFloatCenter * viewportInv;
-    float2 samplePosHalfTip = halfTipTracedPos + halfTipTranslation;
-    float2 sampleUVHalfTip = samplePosHalfTip;
-    sampleUVHalfTip = clamp(sampleUVHalfTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float halfTipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVHalfTip, 0);
+    
+    float halfTipDepth             = depthTextureTip.SampleLevel(bilinearClampedSampler, viewportUV, 0);
     uint halfTipDepthAsUIntHigh19 = compressDepth(halfTipDepth);
     
     uint packedAsUINTHigh19HalfTopX = halfTopDepthAsUIntHigh19 | (currentPixelIndex.x & IndexLast13DigitsMask);
