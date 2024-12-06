@@ -1194,17 +1194,15 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         {
             // Push Pull Pass
-            /*
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)],
                               7);
-            */
 
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)],
                               7);
         }
-
+        
         {
             // Resolution
             ResolutionConstParamStruct cb = {};
