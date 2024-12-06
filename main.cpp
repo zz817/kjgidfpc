@@ -656,9 +656,11 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
     ID3D11UnorderedAccessView* ppUavs[] = {
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopX)].uav,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopY)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipY)].uav
     };
 
-    g_pContext->CSSetUnorderedAccessViews(0, 2, ppUavs, nullptr);
+    g_pContext->CSSetUnorderedAccessViews(0, 4, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Clearing)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -669,9 +671,8 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
     g_pContext->CSSetConstantBuffers(0, 1, &buf);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[6] = {nullptr};
-
-    g_pContext->CSSetUnorderedAccessViews(0, 6, emptyUavs, nullptr);
+    ID3D11UnorderedAccessView* emptyUavs[4] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 4, emptyUavs, nullptr);
 }
 
 void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_t grid[])

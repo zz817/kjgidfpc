@@ -3,6 +3,8 @@
 //------------------------------------------------------- PARAMETERS
 RWTexture2D<uint> motionReprojHalfTopX;
 RWTexture2D<uint> motionReprojHalfTopY;
+RWTexture2D<uint> motionReprojHalfTipX;
+RWTexture2D<uint> motionReprojHalfTipY;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -27,5 +29,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         motionReprojHalfTopX[currentPixelIndex] = UnwrittenPackedClearValue;
         motionReprojHalfTopY[currentPixelIndex] = UnwrittenPackedClearValue;
+        motionReprojHalfTipX[currentPixelIndex] = UnwrittenPackedClearValue;
+        motionReprojHalfTipY[currentPixelIndex] = UnwrittenPackedClearValue;
     }
 }
