@@ -1,5 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "util.h"
+
 #include <d3d11.h>
 
 #include <array>
@@ -14,10 +16,11 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image.h"
 #include "stb_image_write.h"
-#include "util.h"
 
 #define JSON_NOEXCEPTION 1
 #include "json.h"
+
+
 
 using json = nlohmann::json;
 
@@ -34,7 +37,9 @@ struct FrameGenerationInputCb
 struct ConfigInfo
 {
     DXGI_FORMAT depthFormat;
+    bool        depthFromExr;
     DXGI_FORMAT mevcFormat;
+    bool        mevcFromExr;
     uint32_t    beginFrameId;
     uint32_t    endFrameId;
     uint32_t    interpolatedFrames;
@@ -70,7 +75,7 @@ std::array<ID3D11SamplerState*, SamplerTypeCount> SamplerList{};
 std::map<ID3D11Resource*, ResourceView> ResourceViewMap{};
 
 FrameGenerationInputCb g_constBufData;
-ConfigInfo             g_configInfo = {DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R16G16_FLOAT, 0, 1, 1};
+ConfigInfo g_configInfo = {DXGI_FORMAT_R24_UNORM_X8_TYPELESS, false, DXGI_FORMAT_R16G16_FLOAT, false, 0, 1, 1};
 
 // Outputs
 ID3D11Texture2D*           g_pColorOutput;
@@ -97,9 +102,17 @@ void ParseConfig(ConfigInfo& info)
         {
             info.depthFormat = static_cast<DXGI_FORMAT>(config["DepthFormat"].get<uint32_t>());
         }
+        if (config.contains("ExrDepth"))
+        {
+            info.depthFromExr = static_cast<bool>(config["ExrDepth"].get<bool>());
+        }
         if (config.contains("MevcFormat"))
         {
             info.mevcFormat = static_cast<DXGI_FORMAT>(config["MevcFormat"].get<uint32_t>());
+        }
+        if (config.contains("ExrMevc"))
+        {
+            info.mevcFromExr = static_cast<bool>(config["ExrMevc"].get<bool>());
         }
         if (config.contains("BeginFrameId"))
         {
@@ -567,8 +580,17 @@ void PrepareInput(uint32_t frameIndex)
     }
 
     {
-        std::string pervMevcFile = "MotionVector/motionvector_" + std::to_string(frameIndex) + ".bin";
-        auto        pervMevc     = AcquireFileContent(pervMevcFile);
+        std::string          pervMevcFile = "MotionVector/motionvector_" + std::to_string(frameIndex);
+        std::vector<uint8_t> pervMevc     = {};
+
+        if (g_configInfo.mevcFromExr)
+        {
+            pervMevc = AcquireExrFileContent(pervMevcFile + ".exr");
+        }
+        else
+        {
+            pervMevc = AcquireFileContent(pervMevcFile + ".bin");
+        }
 
         g_pContext->Map(stagMevc, 0, D3D11_MAP_WRITE, 0, &mapped);
         memcpy(mapped.pData, pervMevc.data(), pervMevc.size());
@@ -577,8 +599,17 @@ void PrepareInput(uint32_t frameIndex)
     }
 
     {
-        std::string currMevcFile = "MotionVector/motionvector_" + std::to_string(frameIndex + 1) + ".bin";
-        auto        currMevc     = AcquireFileContent(currMevcFile);
+        std::string          currMevcFile = "MotionVector/motionvector_" + std::to_string(frameIndex + 1);
+        std::vector<uint8_t> currMevc     = {};
+
+        if (g_configInfo.mevcFromExr)
+        {
+            currMevc = AcquireExrFileContent(currMevcFile + ".exr");
+        }
+        else
+        {
+            currMevc = AcquireFileContent(currMevcFile + ".bin");
+        }
 
         g_pContext->Map(stagMevc, 0, D3D11_MAP_WRITE, 0, &mapped);
         memcpy(mapped.pData, currMevc.data(), currMevc.size());
@@ -587,18 +618,36 @@ void PrepareInput(uint32_t frameIndex)
     }
 
     {
-        std::string pervDepthFile = "Depth/depth_" + std::to_string(frameIndex) + ".bin";
-        auto        pervDepth     = AcquireFileContent(pervDepthFile);
+        std::string          pervDepthFile = "Depth/depth_" + std::to_string(frameIndex);
+        std::vector<uint8_t> prevDepth     = {};
+
+        if (g_configInfo.depthFromExr)
+        {
+            prevDepth = AcquireExrFileContent(pervDepthFile + ".exr");
+        }
+        else
+        {
+            prevDepth = AcquireFileContent(pervDepthFile + ".bin");
+        }
 
         g_pContext->Map(stagDepth, 0, D3D11_MAP_WRITE, 0, &mapped);
-        memcpy(mapped.pData, pervDepth.data(), pervDepth.size());
+        memcpy(mapped.pData, prevDepth.data(), prevDepth.size());
         g_pContext->Unmap(stagDepth, 0);
         g_pContext->CopyResource(InputResourceList[static_cast<size_t>(InputResType::PrevDepth)], stagDepth);
     }
 
     {
-        std::string currDepthFile = "Depth/depth_" + std::to_string(frameIndex + 1) + ".bin";
-        auto        currDepth     = AcquireFileContent(currDepthFile);
+        std::string          currDepthFile = "Depth/depth_" + std::to_string(frameIndex + 1);
+        std::vector<uint8_t> currDepth     = {};
+
+        if (g_configInfo.depthFromExr)
+        {
+            currDepth = AcquireExrFileContent(currDepthFile + ".exr");
+        }
+        else
+        {
+            currDepth = AcquireFileContent(currDepthFile + ".bin");
+        }
 
         g_pContext->Map(stagDepth, 0, D3D11_MAP_WRITE, 0, &mapped);
         memcpy(mapped.pData, currDepth.data(), currDepth.size());
@@ -1208,6 +1257,10 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
 int main()
 {
+    //AcquireExrFileContent("C:\\Users\\nelson.zhang\\Downloads\\ThirdPersonMapVelocity.0002.exr\\ThirdPersonMapVelocity.0002.exr");
+    //AcquireExrFileContent(
+    //    "C:\\Users\\nelson.zhang\\Downloads\\AncientWorldSceneDepth.0010.exr\\AncientWorldSceneDepth.0010.exr");
+
     ParseConfig(g_configInfo);
 
     std::cout << "BeginFrameId: " << g_configInfo.beginFrameId << std::endl;

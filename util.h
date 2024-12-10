@@ -1,10 +1,18 @@
 #pragma once
 
+#include "OpenEXR/ImfRgbaFile.h"
+#include "OpenEXR/ImfChannelList.h"
+#include "OpenEXR/ImfFrameBuffer.h"
+#include "OpenEXR/ImfArray.h"
+
 #include <dxgiformat.h>
 #include <d3d11.h>
 
 #include <stdint.h>
 #include <tuple>
+#include <vector>
+#include <fstream>
+#include <assert.h>
 
 enum class ComputeShaderType : uint32_t {
   Clear,
@@ -197,6 +205,41 @@ struct ShaderInfo {
   ComputeShaderType shaderType;
   std::string dxbcFile;
 };
+
+std::vector<uint8_t> AcquireExrFileContent(const std::string path) {
+  Imf::RgbaInputFile file(path.c_str());
+
+  auto header   = file.header();
+  auto& channel = header.channels();
+
+  static constexpr int ChannelCount = 4;
+
+  int exrFileChannelCount = 0;
+  for (Imf::ChannelList::Iterator it = channel.begin(); it != channel.end(); ++it)
+  {
+      assert(it.channel().type == Imf::HALF);
+      exrFileChannelCount++;
+  }
+
+  assert(exrFileChannelCount == ChannelCount);
+
+  Imath::Box2i dw     = file.header().dataWindow();
+  int          width  = dw.max.x - dw.min.x + 1;
+  int          height = dw.max.y - dw.min.y + 1;
+
+  Imf::Array2D<Imf::Rgba> pixels;
+  pixels.resizeErase(height, width);
+
+  file.setFrameBuffer(&pixels[0][0] - dw.min.x - dw.min.y * width, 1, width);
+  file.readPixels(dw.min.y, dw.max.y);
+
+  std::vector<uint8_t> result = {};
+  result.resize(width * height * sizeof(Imf::Rgba));
+
+  std::memcpy(result.data(), &pixels[0][0], result.size());
+
+  return result;
+}
 
 std::vector<uint8_t> AcquireFileContent(const std::string& path) {
   std::vector<uint8_t> result;

@@ -45,3 +45,18 @@ The project will auto-gen dxbc file to exe directory, it means you can modify th
 Also you can wirte only hlsl file and compile it to dxbc and then set the dxbc file to exe directory.
 
 Test data link: https://drive.google.com/file/d/12dMkKSQmnnrl-C85cgQOy8QjKece2qQu/view?usp=drive_link
+
+-----------------------------------------------------------------------------------------------------------------------
+
+The renderdoc link: https://drive.google.com/file/d/1ijA_CM6_lyFyBhIFLavr905KQOyNW0Vr/view?usp=drive_link
+
+How to use?
+This version render doc add four environment variable keys：
+
+StartDrawId, begin with 0, per draw call increament 1, default is UINT_MAX
+
+EndDrawId,default is UINT_MAX
+
+StartDispatchId, begin with 0, per dispatch call increament 1,default is UINT_MAX
+
+EndDispatchId,default is UINT_MAX

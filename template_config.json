@@ -1,6 +1,21 @@
+// If you use binary depth file or mevc file, you should set ExrDepth to false or ExrMevc to false
 {
     "DepthFormat" : 46,
+    "ExrDepth" : false,
     "MevcFormat" : 34,
+    "ExrMevc" : false,
+    "BeginFrameId" : 0,
+    "EndFrameId" : 1,
+    "InterpolatedFrames" : 2
+}
+
+// If you want use exr file, the demo only support four channel and half type exr file.
+// So you also should set DepthFormat or MevcFormt to R16G16B16A16_FLOAT, and make sure your shader read correct channel.
+{
+    "DepthFormat" : 10,
+    "ExrDepth" : true,
+    "MevcFormat" : 10,
+    "ExrMevc" : true,
     "BeginFrameId" : 0,
     "EndFrameId" : 1,
     "InterpolatedFrames" : 2
