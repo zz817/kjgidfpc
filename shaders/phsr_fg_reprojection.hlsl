@@ -36,53 +36,47 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 pixelCenter = float2(currentPixelIndex) + 0.5f;
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
-    float2 mCurr = currMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
-    float2 mPrev = prevMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
-    
-    const float distanceFull = tipTopDistance.x + tipTopDistance.y;
+
+    const float distanceFull    = tipTopDistance.x + tipTopDistance.y;
     const float distanceHalfTip = tipTopDistance.x;
     const float distanceHalfTop = tipTopDistance.y;
-	
-    //Actual top interpolation, effective, proven, trusted <-
-    float2 halfTopTranslation = mCurr * distanceHalfTop;
-    float2 halfTopTracedScreenPos = screenPos + halfTopTranslation;
-    int2 halfTopTracedIndex = floor(halfTopTracedScreenPos * viewportSize);
-    
+    const float alpha           = distanceHalfTip;
+
+    float2 mCurr                  = currMotionVector.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    float2 fullTopTranslation     = mCurr * distanceFull;
+    float2 fullTopTracedScreenPos = screenPos + fullTopTranslation;
+    int2   fullTopTracedIndex     = floor(fullTopTracedScreenPos * viewportSize);
+    float2 fullTopTracedUV        = fullTopTracedScreenPos;
+    fullTopTracedUV               = clamp(fullTopTracedUV, 0.0f, 1.0f);
+    float2 mPrev                  = prevMotionVector.SampleLevel(bilinearClampedSampler, fullTopTracedUV, 0);
+
+    float2 rendezvousScreenPos = screenPos + mCurr;
+    rendezvousScreenPos        = rendezvousScreenPos - 0.5f * alpha * (mCurr + mPrev);
+    rendezvousScreenPos        = rendezvousScreenPos - 0.5f * alpha * alpha * (mCurr - mPrev);
+    rendezvousScreenPos        = clamp(rendezvousScreenPos, 0.0f, 1.0f);
+    int2 rendezvousIndex       = floor(rendezvousScreenPos * viewportSize);
+   
     float halfTopDepth             = depthTextureTop.SampleLevel(bilinearClampedSampler, viewportUV, 0);
     uint halfTopDepthAsUIntHigh19 = compressDepth(halfTopDepth);
     
-    //Tip interpolation, guesswork, unproven, untrusted <-
-    float2 halfTipTranslation = mPrev * distanceHalfTip;
-    float2 halfTipTracedScreenPos = screenPos - halfTipTranslation;
-    int2 halfTipTracedIndex = floor(halfTipTracedScreenPos * viewportSize);
-    
-    float halfTipDepth             = depthTextureTip.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    float halfTipDepth             = depthTextureTip.SampleLevel(bilinearClampedSampler, fullTopTracedUV, 0);
     uint halfTipDepthAsUIntHigh19 = compressDepth(halfTipDepth);
     
     uint packedAsUINTHigh19HalfTopX = halfTopDepthAsUIntHigh19 | (currentPixelIndex.x & IndexLast13DigitsMask);
     uint packedAsUINTHigh19HalfTopY = halfTopDepthAsUIntHigh19 | (currentPixelIndex.y & IndexLast13DigitsMask);
-    uint packedAsUINTHigh19HalfTipX = halfTipDepthAsUIntHigh19 | (currentPixelIndex.x & IndexLast13DigitsMask);
-    uint packedAsUINTHigh19HalfTipY = halfTipDepthAsUIntHigh19 | (currentPixelIndex.y & IndexLast13DigitsMask);
+    uint packedAsUINTHigh19HalfTipX = halfTipDepthAsUIntHigh19 | (fullTopTracedIndex.x & IndexLast13DigitsMask);
+    uint packedAsUINTHigh19HalfTipY = halfTipDepthAsUIntHigh19 | (fullTopTracedIndex.y & IndexLast13DigitsMask);
     
 	{
-        bool bIsValidHalfTopPixel = all(halfTopTracedIndex < int2(dimensions)) && all(halfTopTracedIndex >= int2(0, 0));
+        bool bIsValidHalfTopPixel = all(rendezvousIndex < int2(dimensions)) && all(rendezvousIndex >= int2(0, 0));
         if (bIsValidHalfTopPixel)
         {
             uint originalValX;
             uint originalValY;
-            InterlockedMax(motionReprojHalfTopX[halfTopTracedIndex], packedAsUINTHigh19HalfTopX, originalValX);
-            InterlockedMax(motionReprojHalfTopY[halfTopTracedIndex], packedAsUINTHigh19HalfTopY, originalValY);
-        }
-    }
-    
-    {
-        bool bIsValidHalfTipPixel = all(halfTipTracedIndex < int2(dimensions)) && all(halfTipTracedIndex >= int2(0, 0));
-        if (bIsValidHalfTipPixel)
-        {
-            uint originalValX;
-            uint originalValY;
-            InterlockedMax(motionReprojHalfTipX[halfTipTracedIndex], packedAsUINTHigh19HalfTipX, originalValX);
-            InterlockedMax(motionReprojHalfTipY[halfTipTracedIndex], packedAsUINTHigh19HalfTipY, originalValY);
+            InterlockedMax(motionReprojHalfTopX[rendezvousIndex], packedAsUINTHigh19HalfTopX, originalValX);
+            InterlockedMax(motionReprojHalfTopY[rendezvousIndex], packedAsUINTHigh19HalfTopY, originalValY);
+            InterlockedMax(motionReprojHalfTipX[rendezvousIndex], packedAsUINTHigh19HalfTipX, originalValX);
+            InterlockedMax(motionReprojHalfTipY[rendezvousIndex], packedAsUINTHigh19HalfTipY, originalValY);
         }
     }
 }
