@@ -72,12 +72,17 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include\Imath;$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include;$(SolutionDir)$(Platform)\$(Configuration);$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include\OpenEXR;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)vcpkg_installed\x64-windows\include;$(SolutionDir)$(Platform)\$(Configuration);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)vcpkg_installed\x64-windows\debug\lib;$(LibraryPath)</LibraryPath>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)vcpkg_installed\x64-windows\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)vcpkg_installed\x64-windows\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -140,7 +145,7 @@ $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_resolution.hlsl -pr
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>tinyexr.lib;miniz.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_clearing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_clearing.dxbc
@@ -163,12 +168,14 @@ $(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_resolution.hlsl -pr
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>tinyexr.lib;miniz.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>$(SolutionDir)tools\slangc.exe $(SolutionDir)shaders\phsr_fg_clearing.hlsl -profile sm_5_0 -entry main -target dxbc -o $(SolutionDir)$(Platform)\$(Configuration)\phsr_fg_clearing.dxbc

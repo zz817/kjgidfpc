@@ -1,9 +1,6 @@
 #pragma once
 
-#include "OpenEXR/ImfRgbaFile.h"
-#include "OpenEXR/ImfChannelList.h"
-#include "OpenEXR/ImfFrameBuffer.h"
-#include "OpenEXR/ImfArray.h"
+#include "tinyexr.h"
 
 #include <dxgiformat.h>
 #include <d3d11.h>
@@ -13,6 +10,8 @@
 #include <vector>
 #include <fstream>
 #include <assert.h>
+
+#define TINYEXR_IMPLEMENTATION
 
 enum class ComputeShaderType : uint32_t {
   Clear,
@@ -144,101 +143,164 @@ struct NormalizingConstParamStruct
 };
 
 struct MVecParamStruct {
-  float prevClipToClip[16];
-  float clipToPrevClip[16];
+    float prevClipToClip[16];
+    float clipToPrevClip[16];
 
-  uint32_t dimensions[2];
-  float tipTopDistance[2];
-  float viewportSize[2];
-  float viewportInv[2];
+    uint32_t dimensions[2];
+    float tipTopDistance[2];
+    float viewportSize[2];
+    float viewportInv[2];
 };
 
 struct MergeParamStruct {
-  float prevClipToClip[16];
-  float clipToPrevClip[16];
+    float prevClipToClip[16];
+    float clipToPrevClip[16];
 
-  uint32_t dimensions[2];
-  float tipTopDistance[2];
-  float viewportSize[2];
-  float viewportInv[2];
+    uint32_t dimensions[2];
+    float tipTopDistance[2];
+    float viewportSize[2];
+    float viewportInv[2];
 };
 
 struct PyramidParamStruct {
-  uint32_t FinerDimension[2];
-  uint32_t CoarserDimension[2];
-  float tipTopDistance[2];
-  float viewportInv[2];
+    uint32_t FinerDimension[2];
+    uint32_t CoarserDimension[2];
+    float tipTopDistance[2];
+    float viewportInv[2];
 
-  void becomeCoarser()
-  {
-    FinerDimension[0] = CoarserDimension[0];
-    FinerDimension[1] = CoarserDimension[1];
-    CoarserDimension[0] /= 2;
-    CoarserDimension[1] /= 2;
+    void becomeCoarser()
+    {
+        FinerDimension[0] = CoarserDimension[0];
+        FinerDimension[1] = CoarserDimension[1];
+        CoarserDimension[0] /= 2;
+        CoarserDimension[1] /= 2;
 
-    viewportInv[0] *= 2.0f;
-    viewportInv[1] *= 2.0f;
-  };
-  void becomeFiner()
-  {
-    CoarserDimension[0] = FinerDimension[0];
-    CoarserDimension[1] = FinerDimension[1];
-    FinerDimension[0] *= 2;
-    FinerDimension[1] *= 2;
+        viewportInv[0] *= 2.0f;
+        viewportInv[1] *= 2.0f;
+    };
+    void becomeFiner()
+    {
+        CoarserDimension[0] = FinerDimension[0];
+        CoarserDimension[1] = FinerDimension[1];
+        FinerDimension[0] *= 2;
+        FinerDimension[1] *= 2;
 
-    viewportInv[0] *= 0.5f;
-    viewportInv[1] *= 0.5f;
-  };
+        viewportInv[0] *= 0.5f;
+        viewportInv[1] *= 0.5f;
+    };
 };
 
 struct ResolutionConstParamStruct {
-  float prevClipToClip[16];
-  float clipToPrevClip[16];
+    float prevClipToClip[16];
+    float clipToPrevClip[16];
 
-  uint32_t dimensions[2];
-  float tipTopDistance[2];
-  float viewportSize[2];
-  float viewportInv[2];
+    uint32_t dimensions[2];
+    float tipTopDistance[2];
+    float viewportSize[2];
+    float viewportInv[2];
 };
 
 struct ShaderInfo {
-  ComputeShaderType shaderType;
-  std::string dxbcFile;
+    ComputeShaderType shaderType;
+    std::string dxbcFile;
 };
 
-std::vector<uint8_t> AcquireExrFileContent(const std::string path) {
-  Imf::RgbaInputFile file(path.c_str());
+uint32_t as_uint(const float x)
+{
+    return *(uint32_t*)&x;
+}
 
-  auto header   = file.header();
-  auto& channel = header.channels();
+uint32_t float_to_half(const float x)
+{ // IEEE-754 16-bit floating-point format (without infinity): 1-5-10, exp-15, +-131008.0, +-6.1035156E-5,
+  // +-5.9604645E-8, 3.311 digits
+    const uint32_t b = as_uint(x) + 0x00001000; // round-to-nearest-even: add last bit after truncated mantissa
+    const uint32_t e = (b & 0x7F800000) >> 23;  // exponent
+    const uint32_t m = b & 0x007FFFFF;          // mantissa; in line below: 0x007FF000 = 0x00800000-0x00001000 = decimal
+                                                // indicator flag - initial rounding
+    return (b & 0x80000000) >> 16 | (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13) |
+           ((e < 113) & (e > 101)) * ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) |
+           (e > 143) * 0x7FFF; // sign : normalized : denormalized : saturate
+}
 
-  static constexpr int ChannelCount = 4;
+std::vector<uint8_t> AcquireExrFileContentMvec(const std::string path)
+{
+    std::string expectedExtension = ".exr";
+    std::string extension         = path.substr(path.size() - expectedExtension.size(), expectedExtension.size());
 
-  int exrFileChannelCount = 0;
-  for (Imf::ChannelList::Iterator it = channel.begin(); it != channel.end(); ++it)
-  {
-      assert(it.channel().type == Imf::HALF);
-      exrFileChannelCount++;
-  }
+    int width  = 0;
+    int height = 0;
+    assert(extension == expectedExtension);
+    float*      tempData = nullptr;
+    const char* err      = nullptr;
+    int         ret      = LoadEXR(&tempData, &width, &height, path.c_str(), &err);
 
-  assert(exrFileChannelCount == ChannelCount);
+    assert(ret == TINYEXR_SUCCESS);
+    // 16 + 16 = 32
+    char* m_pData = reinterpret_cast<char*>(new uint32_t[width * height]);
+    // Process the data (e.g., print some of the pixel values)
+    for (uint32_t h = 0; h < height; ++h)
+    {
+        for (uint32_t w = 0; w < width; ++w)
+        {
+            float* pPixel = (tempData + (h * width + w) * 4);
+            float  valG   = pPixel[0];
+            float  valB   = pPixel[1];
+            float  valX   = 2.0f * valB - 1.0f;
+            float  valY   = 1.0f - 2.0f * valG;
 
-  Imath::Box2i dw     = file.header().dataWindow();
-  int          width  = dw.max.x - dw.min.x + 1;
-  int          height = dw.max.y - dw.min.y + 1;
+            valX = -valX;
+            valY = -valY;
+            
+            uint32_t valX16Bit = float_to_half(valX);
+            uint32_t valY16Bit = float_to_half(valY);
+            uint32_t val       = (valY16Bit << 16) | valX16Bit;
 
-  Imf::Array2D<Imf::Rgba> pixels;
-  pixels.resizeErase(height, width);
+            uint32_t* pPixel32 = reinterpret_cast<uint32_t*>(m_pData + (h * width + w) * sizeof(uint32_t));
+            pPixel32[0]        = val;
+        }
+    }
+    std::vector<uint8_t> result = {};
+    result.reserve(width * height * sizeof(uint32_t));
+    result.assign(m_pData, m_pData + width * height * sizeof(uint32_t));
 
-  file.setFrameBuffer(&pixels[0][0] - dw.min.x - dw.min.y * width, 1, width);
-  file.readPixels(dw.min.y, dw.max.y);
+    free(tempData);
+    delete[] m_pData;
 
-  std::vector<uint8_t> result = {};
-  result.resize(width * height * sizeof(Imf::Rgba));
+    return result;
+}
 
-  std::memcpy(result.data(), &pixels[0][0], result.size());
+std::vector<uint8_t> AcquireExrFileContentDepth(const std::string path)
+{
+    std::string expectedExtension = ".exr";
+    std::string extension         = path.substr(path.size() - expectedExtension.size(), expectedExtension.size());
 
-  return result;
+    int width = 0;
+    int height = 0;
+    assert(extension == expectedExtension);
+    float*      tempData = nullptr;
+    const char* err      = nullptr;
+    int         ret      = LoadEXR(&tempData, &width, &height, path.c_str(), &err);
+
+    assert(ret == TINYEXR_SUCCESS);
+    char* m_pData = reinterpret_cast<char*>(new float[width * height]);
+    // Process the data (e.g., print some of the pixel values)
+    for (uint32_t h = 0; h < height; ++h)
+    {
+        for (uint32_t w = 0; w < width; ++w)
+        {
+            float* pPixel   = (tempData + (h * width + w) * 4);
+            float* pPixel32 = reinterpret_cast<float*>(m_pData + (h * width + w) * sizeof(float));
+            *pPixel32       = 1.0f - pPixel[0];
+        }
+    }
+    std::vector<uint8_t> result = {};
+    result.reserve(width * height * sizeof(float));
+    result.assign(m_pData, m_pData + width * height * sizeof(float));
+
+    free(tempData);
+    delete[] m_pData;
+    
+    return result;
 }
 
 std::vector<uint8_t> AcquireFileContent(const std::string& path) {

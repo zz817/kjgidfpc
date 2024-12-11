@@ -585,7 +585,7 @@ void PrepareInput(uint32_t frameIndex)
 
         if (g_configInfo.mevcFromExr)
         {
-            pervMevc = AcquireExrFileContent(pervMevcFile + ".exr");
+            pervMevc = AcquireExrFileContentMvec(pervMevcFile + ".exr");
         }
         else
         {
@@ -604,7 +604,7 @@ void PrepareInput(uint32_t frameIndex)
 
         if (g_configInfo.mevcFromExr)
         {
-            currMevc = AcquireExrFileContent(currMevcFile + ".exr");
+            currMevc = AcquireExrFileContentMvec(currMevcFile + ".exr");
         }
         else
         {
@@ -623,7 +623,7 @@ void PrepareInput(uint32_t frameIndex)
 
         if (g_configInfo.depthFromExr)
         {
-            prevDepth = AcquireExrFileContent(pervDepthFile + ".exr");
+            prevDepth = AcquireExrFileContentDepth(pervDepthFile + ".exr");
         }
         else
         {
@@ -642,7 +642,7 @@ void PrepareInput(uint32_t frameIndex)
 
         if (g_configInfo.depthFromExr)
         {
-            currDepth = AcquireExrFileContent(currDepthFile + ".exr");
+            currDepth = AcquireExrFileContentDepth(currDepthFile + ".exr");
         }
         else
         {
