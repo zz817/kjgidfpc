@@ -1083,16 +1083,21 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
     ID3D11ShaderResourceView* ppSrvs[] = {
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::PrevMvecDuplicated)].srv,
+
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv
     };
-    g_pContext->CSSetShaderResources(0, 8, ppSrvs);
+    g_pContext->CSSetShaderResources(0, 6, ppSrvs);
 
-    g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
+     ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedXPP)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedYPP)].uav,
+        g_pColorOutputUav
+     };
+
+    g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, nullptr);
 
     ID3D11Buffer*            buf    = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::Resolution)];
     D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -1104,10 +1109,10 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
     g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
     g_pContext->Dispatch(grid[0], grid[1], grid[2]);
 
-    ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
-    g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
-    ID3D11ShaderResourceView* emptySrvs[8] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 8, emptySrvs);
+    ID3D11UnorderedAccessView* emptyUavs[3] = {nullptr};
+    g_pContext->CSSetUnorderedAccessViews(0, 3, emptyUavs, 0);
+    ID3D11ShaderResourceView* emptySrvs[6] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 6, emptySrvs);
 }
 
 void RunAlgo(uint32_t frameIndex, uint32_t total)

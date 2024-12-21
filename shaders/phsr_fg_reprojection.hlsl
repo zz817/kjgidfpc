@@ -34,7 +34,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
     float2 mCurr = currMotionVector[currentPixelIndex];
-    float2 dCurr = depthTextureTop[currentPixelIndex];
+    float dCurr = depthTextureTop[currentPixelIndex];
     uint depthAsUIntHigh19 = compressDepth(dCurr);
    
     const float distanceAlpha1st = tipTopDistance.x;

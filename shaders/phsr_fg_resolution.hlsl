@@ -1,18 +1,17 @@
 #include "phsr_common.hlsli"
 
-Texture2D<float3> colorTextureTip;
-Texture2D<float> depthTextureTip;
-Texture2D<float3> colorTextureTop;
-Texture2D<float> depthTextureTop;
-
-Texture2D<float2> motionReprojectedHalfTopPyr;
-Texture2D<float2> motionReprojectedHalfTopRaw;
-Texture2D<float2> motionReprojectedHalfTipPyr;
-Texture2D<float2> motionReprojectedHalfTipRaw;
-
-//Texture2D<float4> uiColorTexture;
+RWTexture2D<uint> motionReprojX;
+RWTexture2D<uint> motionReprojY;
 
 RWTexture2D<float4> outputTexture;
+
+Texture2D<float3> colorTextureTip;
+Texture2D<float> depthTextureTip;
+Texture2D<float2> motionVectorTextureTip;
+
+Texture2D<float3> colorTextureTop;
+Texture2D<float> depthTextureTop;
+Texture2D<float2> motionVectorTextureTop;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -47,114 +46,84 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 pixelCenter = float2(currentPixelIndex) + 0.5f;
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
-
-    float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
-    bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionValue) ? true : false;
-    bool isTopVisible = !isTopInvisible;
     
-    float2 velocityProx = 0.0f;
-    bool isProxTopVisible = false;
-    float proxTopNorm = 0.0f;
-    float viableProxCount = 0.0f;
-    for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
-    {
-        int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
-        int2 pixelPatchIndex = currentPixelIndex + offset;
-        float2 velocityProxTopElement = motionReprojectedHalfTopRaw[pixelPatchIndex];
-        bool isViableProxTop = any(velocityProxTopElement >= ImpossibleMotionValue) ? false : true;
-        if (isViableProxTop)
-        {
-            float weight = gaussianDistributionWeightForVariance(offset, 3);
-            velocityProx += velocityProxTopElement * weight;
-            proxTopNorm += 1.0f * weight;
-            viableProxCount += 1.0f;
-        }
-    }
-    if (viableProxCount > 0.5f * float(subsampleCount9PointPatch))
-    {
-        isProxTopVisible = true;
-    }
+    const float distanceHalfTip = tipTopDistance.x;
+    const float distanceHalfTop = tipTopDistance.y;
+    const float distanceFull = distanceHalfTip + distanceHalfTop;
+    const float distanceAlpha1st = tipTopDistance.x;
+    const float distanceAlphaSqr = distanceAlpha1st * distanceAlpha1st;
     
-    if (isProxTopVisible)
-    {
-        velocityProx *= SafeRcp(proxTopNorm);
-        if (isTopInvisible)
-        {
-            velocityHalfRaw = velocityProx;
-            isTopInvisible = false;
-            isTopVisible = true;
-        }
-    }
+    uint reprojX = motionReprojX[currentPixelIndex];
+    uint reprojXIndex = reprojX & IndexLast13DigitsMask;
+    uint reprojY = motionReprojY[currentPixelIndex];
+    uint reprojYIndex = reprojY & IndexLast13DigitsMask;
+    uint2 reprojIndexTop = uint2(reprojXIndex, reprojYIndex);
+    float2 topMotionVector = float2(0.0f, 0.0f);
     
-    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
-    if (any(velocityHalfPyr >= ImpossibleMotionValue))
-    {
-        velocityHalfPyr = 0.0f;
-    }
-    float2 velocityHalfTip = motionReprojectedHalfTipPyr[currentPixelIndex];
-    if (any(velocityHalfTip >= ImpossibleMotionValue))
-    {
-        velocityHalfTip = 0.0f;
-    }
+    bool isTopInvisible = reprojXIndex == UnwrittenIndexIndicator || reprojYIndex == UnwrittenIndexIndicator;
     
-    const float distanceTip = tipTopDistance.x;
-    const float distanceTop = tipTopDistance.y;
-
-    float2 halfTipTranslation = distanceTip * velocityHalfPyr;
-    float2 halfTopTranslation = distanceTop * velocityHalfRaw;
-    float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
-
-    float2 tipTracedScreenPos = screenPos + halfTipTranslation;
-    float2 topTracedScreenPos = screenPos - halfTopTranslation;
-    float2 spareTracedScreenPos = screenPos - halfTopSpareTrans;
-
-    float2 sampleUVTip = tipTracedScreenPos;
-    sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float2 sampleUVTop = topTracedScreenPos;
-    sampleUVTop = clamp(sampleUVTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    //float2 sampleUVSpare = spareTracedScreenPos;
-    //sampleUVSpare = clamp(sampleUVSpare, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-	
-    float3 tipSample = colorTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
-    float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
-    float3 topSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
-    float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
-    //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-    //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-    
-    /*
-    if (any(abs(tipTracedScreenPos - sampleUVTip)) > 0.0f)
+    if (isTopInvisible)
     {
-        tipSample = 0.0f;
-    }
-    if (any(abs(topTracedScreenPos - sampleUVTop)) > 0.0f)
-    {
-        topSample = 0.0f;
-    }
-    */
-    
-    float3 finalSample = float3(0.0f, 0.0f, 0.0f);
-    if (isTopVisible)
-    {
-        finalSample = topSample;
-#ifdef DEBUG_COLORS
-        finalSample = debugRed;
-        //finalSample = float3(halfTopTranslation, 0.0f);
-#endif
+        topMotionVector = motionVectorTextureTip[currentPixelIndex];
     }
     else
     {
-        //finalSample = spareDepth < tipDepth ? spareSample : tipSample;
-        finalSample = tipSample;
-#ifdef DEBUG_COLORS
-        finalSample = debugGreen;
-        //finalSample = float3(halfTipTranslation, 0.0f);
-#endif
+        topMotionVector = motionVectorTextureTop[reprojIndexTop];
     }
-
-    //finalSample = float3(abs(motionReprojectedHalfTopPyr[currentPixelIndex]), 0.0f);
-
-	{
+    
+    float2 topUV = float2(0.0f, 0.0f);
+    float2 tipUV = float2(0.0f, 0.0f);
+    if (isTopInvisible)
+    {
+        topUV = screenPos - topMotionVector * distanceHalfTop;
+        tipUV = screenPos + topMotionVector * distanceHalfTip;
+    }
+    else
+    {
+        float2 departUV = (float2(reprojIndexTop) + float2(0.5f, 0.5f)) * viewportInv;
+        float2 trackedUV = departUV + topMotionVector * distanceFull;
+        float2 tipMotionVector = motionVectorTextureTip.SampleLevel(bilinearClampedSampler, trackedUV, 0);
+        
+        topUV = screenPos;
+        topUV += 0.5f * distanceAlpha1st * (topMotionVector + tipMotionVector);
+        topUV += 0.5f * distanceAlphaSqr * (topMotionVector - tipMotionVector);
+        tipUV = -topMotionVector + topUV;
+    }
+    
+    float3 finalSample = float3(0.0f, 0.0f, 0.0f);
+    
+    float3 topColor = colorTextureTop.SampleLevel(bilinearClampedSampler, topUV, 0);
+    float3 tipColor = colorTextureTip.SampleLevel(bilinearClampedSampler, tipUV, 0);
+    float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, topUV, 0);
+    float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, tipUV, 0);
+    
+    
+    if (any(tipUV < 0.0f) || any(tipUV > 1.0f))
+    {
+        finalSample = topColor;
+    }
+    else if (any(topUV < 0.0f) || any(topUV > 1.0f))
+    {
+        finalSample = tipColor;
+    }
+    else if (abs(topDepth - tipDepth) < 0.0028f)
+    {
+        float3 diffColor = abs(topColor - tipColor);
+        float diffLuma = dot(diffColor, float3(0.299f, 0.587f, 0.114f));
+        if (diffLuma > 0.13f)
+        {
+            finalSample = lerp(topColor, tipColor, distanceHalfTip);
+        }
+        else
+        {
+            finalSample = topColor;
+        }
+    }
+    else
+    {
+        finalSample = topDepth > tipDepth ? topColor : tipColor;
+    }
+    {
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
