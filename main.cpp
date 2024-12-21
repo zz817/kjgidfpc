@@ -724,6 +724,12 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
 
 void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_t grid[])
 {
+    if (g_configInfo.mevcFromExr)
+    {
+        pCb->viewportInv[0] = 1.0f;
+        pCb->viewportInv[1] = 1.0f;
+    }
+
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Normalizing)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {
@@ -1087,15 +1093,13 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv
-    };
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv};
     g_pContext->CSSetShaderResources(0, 6, ppSrvs);
 
-     ID3D11UnorderedAccessView* ppUavs[] = {
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedXPP)].uav,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedYPP)].uav,
-        g_pColorOutputUav
-     };
+    ID3D11UnorderedAccessView* ppUavs[] = {
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedX)].uav,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedY)].uav,
+        g_pColorOutputUav};
 
     g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, nullptr);
 
@@ -1193,9 +1197,10 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         {
             // Push Pull Pass
+            /*
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTop)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTopFiltered)],
-                              7);
+                              7);*/
             /*
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)],
