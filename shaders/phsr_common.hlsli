@@ -32,7 +32,7 @@ uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 
 #define IndexLast13DigitsMask 0x00001FFF
 
-#define UnwrittenLast13DigitsMask 0x00000000
+#define UnwrittenLast13DigitsMask 0x00001fff
 
 #define UnwrittenLast1DigitMT1 0x00000000
 #define WrittenLast1DigitMT1 0x00000001

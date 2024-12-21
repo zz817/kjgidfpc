@@ -49,10 +49,10 @@ enum class InputResType : uint32_t {
 };
 
 enum class InternalResType : uint32_t {
-  ReprojectedHalfTopX,
-  ReprojectedHalfTopY,
-  ReprojectedHalfTipX,
-  ReprojectedHalfTipY,
+  ReprojectedX,
+  ReprojectedY,
+  ReprojectedXPP,
+  ReprojectedYPP,
 
   ReprojectedHalfTop,
   ReprojectedHalfTopFiltered,
@@ -318,10 +318,10 @@ std::vector<uint8_t> AcquireFileContent(const std::string& path) {
 
 DXGI_FORMAT GetInternalResFormat(InternalResType type) {
   switch (type) {
-    case InternalResType::ReprojectedHalfTopX:
-    case InternalResType::ReprojectedHalfTopY:
-    case InternalResType::ReprojectedHalfTipX:
-    case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedX:
+    case InternalResType::ReprojectedY:
+    case InternalResType::ReprojectedXPP:
+    case InternalResType::ReprojectedYPP:
       return DXGI_FORMAT_R32_UINT;
 
     case InternalResType::ReprojectedHalfTop:
@@ -372,10 +372,10 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
                                                        uint32_t originWidth,
                                                        uint32_t originHeight) {
   switch (type) {
-    case InternalResType::ReprojectedHalfTopX:
-    case InternalResType::ReprojectedHalfTopY:
-    case InternalResType::ReprojectedHalfTipX:
-    case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedX:
+    case InternalResType::ReprojectedY:
+    case InternalResType::ReprojectedXPP:
+    case InternalResType::ReprojectedYPP:
     case InternalResType::ReprojectedHalfTop:
     case InternalResType::ReprojectedHalfTopFiltered:
     case InternalResType::ReprojectedHalfTip:
