@@ -726,6 +726,11 @@ void ProcessFrameGenerationClearing(ClearingConstParamStruct* pCb, uint32_t grid
 
 void ProcessFrameGenerationNormalizing(NormalizingConstParamStruct* pCb, uint32_t grid[])
 {
+    if (g_configInfo.mevcFromExr)
+    {
+        pCb->viewportInv[0] = 1.0f;
+        pCb->viewportInv[1] = 1.0f;
+    }
     g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Normalizing)], nullptr, 0);
 
     ID3D11ShaderResourceView* ppSrvs[] = {

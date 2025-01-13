@@ -27,7 +27,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     bool bIsValidPixel = all(uint2(currentPixelIndex) < dimensions);
     if (bIsValidPixel)
     {
-        currMvecNorm[currentPixelIndex] = currMvec[currentPixelIndex];// * viewportInv;
-        prevMvecNorm[currentPixelIndex] = prevMvec[currentPixelIndex];// * viewportInv;
+        currMvecNorm[currentPixelIndex] = currMvec[currentPixelIndex] * viewportInv;
+        prevMvecNorm[currentPixelIndex] = prevMvec[currentPixelIndex] * viewportInv;
     }
 }
