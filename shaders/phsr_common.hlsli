@@ -1,10 +1,5 @@
 #pragma warning(error: 3206)
 
-#define mtss_float half
-#define mtss_float2 half2
-#define mtss_float3 half3
-#define mtss_float4 half4
-
 uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 {
     uint2 Coord = 0;
@@ -47,8 +42,8 @@ static uint UnwrittenIndexIndicator = UnwrittenLast13DigitsMask;
 static uint UnwrittenMTSSIndicator = UnwrittenLast1DigitMT1;
 static uint WrittenMTSSIndicator = WrittenLast1DigitMT1;
 
-static float ImpossibleMotionValue = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
-static float ImpossibleMotionOffset = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float ImpossibleMotionContested = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float ImpossibleMotionConquered = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
 
 //static int depthTotalBits = 19;
 static int expCustomized = 7;
@@ -87,85 +82,29 @@ uint compressDepth(float incomingDepth)
     return (returning19Uint << (32 - (expCustomized + manCustomized))) & DepthFirst19DigitsMask;
 }
 
-mtss_float SafeRcp(mtss_float x)
+float SafeRcp(float x)
 {
     return x > 0.0 ? rcp(float(x)) : 0.0;
 }
 
-mtss_float3 SafeRcp3(mtss_float3 x)
+float3 SafeRcp3(float3 x)
 {
     return float3(SafeRcp(x.r), SafeRcp(x.g), SafeRcp(x.b));
 }
 
-mtss_float SafeRcpRet1(mtss_float x)
+float SafeRcpRet1(float x)
 {
     return x > 0.0 ? rcp(float(x)) : 1.0;
 }
 
-mtss_float3 SafeRcp3Ret1(mtss_float3 x)
+float3 SafeRcp3Ret1(float3 x)
 {
     return float3(SafeRcpRet1(x.r), SafeRcpRet1(x.g), SafeRcpRet1(x.b));
 }
 
-mtss_float SafeRcpRetAlot(mtss_float x)
+float SafeRcpRetAlot(float x)
 {
     return x > 0.0 ? rcp(float(x)) : 1000000.0;
-}
-
-// Some bright pixel can cause HdrWeight to get nullified under fp16 representation. So clamping this to a value close to the minimum float float positive value (0.000061).
-#define HDR_WEIGHT_SAFE_MIN_VALUE 0.0001
-
-// Faster but less accurate luma computation. 
-// Luma includes a scaling by 4.
-mtss_float Luma4(mtss_float3 Color)
-{
-    return (Color.g * mtss_float(2.0)) + (Color.r + Color.b);
-}
-
-mtss_float HdrWeightY(mtss_float Color)
-{
-    mtss_float Exposure = mtss_float(1.0);
-
-    return max(mtss_float(HDR_WEIGHT_SAFE_MIN_VALUE), rcp(Color * Exposure + mtss_float(4.0)));
-}
-
-mtss_float HdrWeightInvY(mtss_float Color)
-{
-    return mtss_float(4.0) * rcp(mtss_float(1.0) - Color);
-}
-
-// Optimized HDR weighting function.
-mtss_float HdrWeight4(mtss_float3 Color)
-{
-    return HdrWeightY(Luma4(Color));
-}
-
-float2 ComputeStaticVelocityTipTop(float2 ScreenPos, float DeviceZ, float4x4 TopClipToTipClip)
-{
-    float3 PosN = float3(ScreenPos, DeviceZ);
-
-    float4 ThisClip = float4(PosN, 1);
-    float4 PrevClip = mul(TopClipToTipClip, ThisClip);
-    float2 PrevScreen = PrevClip.xy / PrevClip.w;
-    return float2(PosN.xy - PrevScreen);
-}
-
-float2 ComputeStaticVelocityTopTip(float2 ScreenPos, float DeviceZPrev, float4x4 TipClipToTopClip)
-{
-    float3 PosN = float3(ScreenPos, DeviceZPrev);
-
-    float4 PrevClip = float4(PosN, 1);
-    float4 ThisClip = mul(TipClipToTopClip, PrevClip);
-    float2 ThisScreen = ThisClip.xy / ThisClip.w;
-    return float2(ThisScreen - PosN.xy);
-}
-
-bool IsOffScreen(uint bCameraCut, float2 ScreenPos)
-{
-    bool bIsCameraCut = bCameraCut != 0;
-    bool bIsOutOfBounds = max(abs(ScreenPos.x), abs(ScreenPos.y)) >= 1.0;
-
-    return (bIsCameraCut || bIsOutOfBounds);
 }
 
 #define FOUR_POINTS_TIAN_SIZE 4
@@ -209,15 +148,15 @@ static const int2 subsamplePixelOffset9PointPatch[THREE_BY_THREE_PATCH_SIZE] =
     int2(1, 1)
 };
 
-mtss_float gaussianDistributionWeightForVariance(float2 offset, float patchSize)
+float gaussianDistributionWeightForVariance(float2 offset, float patchSize)
 {
     return exp(-3.0f * (offset.x * offset.x + offset.y * offset.y) / ((patchSize + 1.0f) * (patchSize + 1.0f)));
 }
 
-static const mtss_float lanzcosPie = 3.1415926535897932f;
-static const mtss_float lanzcosWidth = 2.0f;
+static const float lanzcosPie = 3.1415926535897932f;
+static const float lanzcosWidth = 2.0f;
 
-mtss_float LanzcosEachDim(mtss_float diff)
+float LanzcosEachDim(float diff)
 {
     if (abs(diff) < 0.00001f)
     {
@@ -229,46 +168,10 @@ mtss_float LanzcosEachDim(mtss_float diff)
     }
     else
     {
-        mtss_float nominator = lanzcosWidth * sin(lanzcosPie * diff) * sin(lanzcosPie * diff / lanzcosWidth);
-        mtss_float denominator = lanzcosPie * lanzcosPie * diff * diff;
+        float nominator = lanzcosWidth * sin(lanzcosPie * diff) * sin(lanzcosPie * diff / lanzcosWidth);
+        float denominator = lanzcosPie * lanzcosPie * diff * diff;
         return nominator * SafeRcp(denominator);
     }
-}
-
-mtss_float UpsampleLanzcos(mtss_float2 diff, mtss_float upsampleFactor)
-{
-    diff *= (upsampleFactor);
-    mtss_float contributionX = LanzcosEachDim(diff.x);
-    mtss_float contributionY = LanzcosEachDim(diff.y);
-    return contributionX * contributionY;
-}
-
-mtss_float UpsampleFilterGaussian(mtss_float2 diff, mtss_float upsampleFactor)
-{
-    mtss_float u2 = upsampleFactor * upsampleFactor;
-    // 1 - 1.9 * x^2 + 0.9 * x^4
-    mtss_float x2 = saturate(u2 * dot(diff, diff));
-    return mtss_float(((mtss_float(0.9f)) * x2 - mtss_float(1.9f)) * x2 + mtss_float(1.0f));
-}
-
-mtss_float GetUpsampleKernelWeight(mtss_float2 diff, mtss_float upsampleFactor, mtss_float minimalContribution)
-{
-    //mtss_float kernelWeight = UpsampleBicubic(diff, upsampleFactor);
-    mtss_float kernelWeight = UpsampleLanzcos(diff, upsampleFactor);
-    //mtss_float kernelWeight = UpsampleFilterTent(diff, 2.0f * SafeRcp(upsampleFactor));
-    //mtss_float kernelWeight = UpsampleFilterGaussian(diff, upsampleFactor);
-    //mtss_float kernelWeight = UpsampleFilterUniversal(diff, SafeRcp(upsampleFactor));
-    return max(kernelWeight, minimalContribution);
-}
-
-mtss_float GetBlunterKernelWeight(mtss_float2 diff, mtss_float upsampleFactor, mtss_float minimalContribution)
-{
-    //mtss_float kernelWeight = UpsampleBicubic(diff, 1.0f);
-    mtss_float kernelWeight = UpsampleFilterGaussian(diff, 0.45f);
-    //mtss_float kernelWeight = UpsampleFilterTent(diff, 2.0f * SafeRcp(upsampleFactor));
-    //mtss_float kernelWeight = UpsampleFilterGaussian(diff, upsampleFactor);
-    //mtss_float kernelWeight = UpsampleFilterUniversal(diff, SafeRcp(upsampleFactor));
-    return max(kernelWeight, minimalContribution);
 }
 
 float3 HSVtoRGB(float3 hsv)

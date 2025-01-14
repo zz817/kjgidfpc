@@ -31,8 +31,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 finerPixelIndex = dispatchThreadId;
     int2 coarserPixelIndex = finerPixelIndex / 2;
     
-    float2 surfaceInv = float2(1.0f, 1.0f) / float2(FinerDimension);
-    
     float2 pixelCenter = float2(finerPixelIndex) + 0.5f;
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
@@ -48,7 +46,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 selectedVector = 0.0f;
     float coarserDepth = depthTextureCoarser[coarserPixelIndex];
     float votedDepth = 0.0f;
-    if (any(unpushedVector >= ImpossibleMotionValue))
+    if (any(unpushedVector >= ImpossibleMotionContested))
     {
         /*float totalVotes = 0.0f;
         for (int i = 0; i < subsampleCount4PointTian; ++i)
