@@ -2,7 +2,8 @@
 
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
-Texture2D<float> depthTextureTip;
+Texture2D<float2> motionVectorCurrRaw;
+Texture2D<float> depthTextureFiner;
 
 RWTexture2D<float2> motionVectorCoarser;
 RWTexture2D<float> depthCoarser;
@@ -45,7 +46,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float2 halfTopTranslation = finerVector * tipTopDistance.y;
             float2 halfTopTracedScreenPos = screenPos + halfTopTranslation;//Now it's at the tip
             float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-            float finerDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
+            float finerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
             
             if (all(finerVector < ImpossibleMotionValue))
             {

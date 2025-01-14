@@ -7,8 +7,6 @@ Texture2D<float> depthTextureTop;
 
 Texture2D<float2> motionReprojectedHalfTopPyr;
 Texture2D<float2> motionReprojectedHalfTopRaw;
-Texture2D<float2> motionReprojectedHalfTipPyr;
-Texture2D<float2> motionReprojectedHalfTipRaw;
 
 //Texture2D<float4> uiColorTexture;
 
@@ -90,11 +88,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     if (any(velocityHalfPyr >= ImpossibleMotionValue))
     {
         velocityHalfPyr = 0.0f;
-    }
-    float2 velocityHalfTip = motionReprojectedHalfTipPyr[currentPixelIndex];
-    if (any(velocityHalfTip >= ImpossibleMotionValue))
-    {
-        velocityHalfTip = 0.0f;
     }
     
     const float distanceTip = tipTopDistance.x;

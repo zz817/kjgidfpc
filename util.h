@@ -49,21 +49,16 @@ enum class InputResType : uint32_t {
 };
 
 enum class InternalResType : uint32_t {
-  ReprojectedHalfTopX,
-  ReprojectedHalfTopY,
-  ReprojectedHalfTipX,
-  ReprojectedHalfTipY,
-
-  ReprojectedHalfTop,
-  ReprojectedHalfTopFiltered,
-  ReprojectedHalfTip,
-  ReprojectedHalfTipFiltered,
-
-  CurrMevcFiltered,
-  PrevMevcFiltered,
+  ReprojectedX,
+  ReprojectedY,
+  
+  ReprojectedMV,
+  ReprojectedDepth,
+  ReprojectedMVFilled,
+  ReprojectedDepthFilled,
+  
   CurrMvecDuplicated,
-  PrevMvecDuplicated,
-
+ 
   MotionVectorLv1,
   MotionVectorLv2,
   MotionVectorLv3,
@@ -318,20 +313,13 @@ std::vector<uint8_t> AcquireFileContent(const std::string& path) {
 
 DXGI_FORMAT GetInternalResFormat(InternalResType type) {
   switch (type) {
-    case InternalResType::ReprojectedHalfTopX:
-    case InternalResType::ReprojectedHalfTopY:
-    case InternalResType::ReprojectedHalfTipX:
-    case InternalResType::ReprojectedHalfTipY:
+    case InternalResType::ReprojectedX:
+    case InternalResType::ReprojectedY:
       return DXGI_FORMAT_R32_UINT;
 
-    case InternalResType::ReprojectedHalfTop:
-    case InternalResType::ReprojectedHalfTopFiltered:
-    case InternalResType::ReprojectedHalfTip:
-    case InternalResType::ReprojectedHalfTipFiltered:
-    case InternalResType::CurrMevcFiltered:
-    case InternalResType::PrevMevcFiltered:
+    case InternalResType::ReprojectedMV:
+    case InternalResType::ReprojectedMVFilled:
     case InternalResType::CurrMvecDuplicated:
-    case InternalResType::PrevMvecDuplicated:
     case InternalResType::MotionVectorLv1:
     case InternalResType::MotionVectorLv2:
     case InternalResType::MotionVectorLv3:
@@ -347,6 +335,8 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::PushedVectorLv6:
       return DXGI_FORMAT_R32G32_FLOAT;
 
+    case InternalResType::ReprojectedDepth:
+    case InternalResType::ReprojectedDepthFilled:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::InpaintedDepthLv2:
     case InternalResType::InpaintedDepthLv3:
@@ -372,18 +362,13 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
                                                        uint32_t originWidth,
                                                        uint32_t originHeight) {
   switch (type) {
-    case InternalResType::ReprojectedHalfTopX:
-    case InternalResType::ReprojectedHalfTopY:
-    case InternalResType::ReprojectedHalfTipX:
-    case InternalResType::ReprojectedHalfTipY:
-    case InternalResType::ReprojectedHalfTop:
-    case InternalResType::ReprojectedHalfTopFiltered:
-    case InternalResType::ReprojectedHalfTip:
-    case InternalResType::ReprojectedHalfTipFiltered:
-    case InternalResType::CurrMevcFiltered:
-    case InternalResType::PrevMevcFiltered:
+    case InternalResType::ReprojectedX:
+    case InternalResType::ReprojectedY:
+    case InternalResType::ReprojectedMV:
+    case InternalResType::ReprojectedMVFilled:
+    case InternalResType::ReprojectedDepth:
+    case InternalResType::ReprojectedDepthFilled:
     case InternalResType::CurrMvecDuplicated:
-    case InternalResType::PrevMvecDuplicated:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
