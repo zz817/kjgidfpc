@@ -285,7 +285,7 @@ std::vector<uint8_t> AcquireExrFileContentDepth(const std::string path)
         {
             float* pPixel   = (tempData + (h * width + w) * 4);
             float* pPixel32 = reinterpret_cast<float*>(m_pData + (h * width + w) * sizeof(float));
-            *pPixel32       = 1.0f - pPixel[0];
+            *pPixel32       = pPixel[0];
         }
     }
     std::vector<uint8_t> result = {};

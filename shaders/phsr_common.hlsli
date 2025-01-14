@@ -21,8 +21,8 @@ uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 //#define UNREAL_ENGINE_COORDINATES
 #define NVRHI_DONUT_COORDINATES
 
-//#define DEPTH_LESSER_CLOSER
-#define DEPTH_GREATER_CLOSER
+#define DEPTH_LESSER_CLOSER
+//#define DEPTH_GREATER_CLOSER
 
 #define DepthFirst19DigitsMask 0xFFFFE000
 #define DepthFirst31DigitsMask 0xFFFFFFFE
