@@ -7,6 +7,7 @@ Texture2D<float> depthTextureTip;
 Texture2D<float> depthTextureCoarser;
 
 RWTexture2D<float2> motionVectorFinerUAV;
+RWTexture2D<float> depthTextureFinerUAV;
 
 cbuffer shaderConsts : register(b0)
 {

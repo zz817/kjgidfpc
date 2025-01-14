@@ -4,6 +4,7 @@
 Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCurrRaw;
 Texture2D<float> depthTextureFiner;
+Texture2D<float> depthTextureCurrRaw;
 
 RWTexture2D<float2> motionVectorCoarser;
 RWTexture2D<float> depthCoarser;
@@ -32,7 +33,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
     float2 filteredVector = 0.0f;
     float filteredDepth = 0.0f;
-    bool isTianInvalid = true;
+    //bool isTianInvalid = true;
     {
         float validSamples = 0.0f;
         for (int i = 0; i < subsampleCount4PointTian; ++i)
