@@ -34,7 +34,7 @@ static float3 debugYellow = float3(1.0f, 1.0f, 0.0f);
 static float3 debugMagenta = float3(1.0f, 0.0f, 1.0f);
 static float3 debugCyan = float3(0.0f, 1.0f, 1.0f);
 
-//#define DEBUG_COLORS
+#define DEBUG_COLORS
 
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]
@@ -47,7 +47,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 screenPos = viewportUV;
 
     float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
-    bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionContested) ? true : false;
+    bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionValue) ? true : false;
     bool isTopVisible = !isTopInvisible;
     
     float2 velocityProx = 0.0f;
@@ -59,7 +59,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
         int2 pixelPatchIndex = currentPixelIndex + offset;
         float2 velocityProxTopElement = motionReprojectedHalfTopRaw[pixelPatchIndex];
-        bool isViableProxTop = any(velocityProxTopElement >= ImpossibleMotionContested) ? false : true;
+        bool isViableProxTop = any(velocityProxTopElement >= ImpossibleMotionValue) ? false : true;
         if (isViableProxTop)
         {
             float weight = gaussianDistributionWeightForVariance(offset, 3);
@@ -85,7 +85,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     
     float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
-    if (any(velocityHalfPyr >= ImpossibleMotionContested))
+    if (any(velocityHalfPyr >= ImpossibleMotionValue))
     {
         velocityHalfPyr = 0.0f;
     }
@@ -105,26 +105,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 sampleUVTop = topTracedScreenPos;
     sampleUVTop = clamp(sampleUVTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    //float2 sampleUVSpare = spareTracedScreenPos;
-    //sampleUVSpare = clamp(sampleUVSpare, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-	
+    
     float3 tipSample = colorTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float3 topSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
     float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
-    //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-    //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-    
-    /*
-    if (any(abs(tipTracedScreenPos - sampleUVTip)) > 0.0f)
-    {
-        tipSample = 0.0f;
-    }
-    if (any(abs(topTracedScreenPos - sampleUVTop)) > 0.0f)
-    {
-        topSample = 0.0f;
-    }
-    */
     
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
@@ -137,7 +122,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     else
     {
-        //finalSample = spareDepth < tipDepth ? spareSample : tipSample;
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
@@ -154,8 +138,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             //float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
             //float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
             outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
-            //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
-            //outputTexture[currentPixelIndex] = float4(abs(velocityHalfPyr), 0.0f, 1.0f);
         }
     }
 }

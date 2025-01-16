@@ -47,39 +47,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     
     float2 selectedVector = 0.0f;
     float coarserDepth = depthTextureCoarser[coarserPixelIndex];
-    if (any(unpushedVector >= ImpossibleMotionContested))
+    if (any(unpushedVector >= ImpossibleMotionValue))
     {
-        /*float votedDepth = 0.0f;
-        float totalVotes = 0.0f;
-        for (int i = 0; i < subsampleCount4PointTian; ++i)
-        {
-            int2 elementIndex = finerPixelIndex + subsamplePixelOffset9PointPatch[i];
-            float2 unpushedElement = motionVectorFiner[elementIndex];
-            float elementDepth = depthTextureTip[elementIndex];
-            if (all(unpushedElement < ImpossibleMotionValue))
-            {
-                votedDepth += elementDepth;
-                totalVotes += 1.0f;
-            }
-        }
-        totalVotes = 1.0f;
-        if (totalVotes > 0.0f)
-        {
-            float normalizationFactor = SafeRcp(totalVotes);
-            votedDepth = votedDepth * normalizationFactor;
-            if ((abs(votedDepth - fetchedFinerDepth) * SafeRcp(votedDepth)) < 0.25f)
-            {
-                selectedVector = fetchedVector;
-            }
-            else
-            {
-                selectedVector = unpushedVector;
-            }
-        }
-        else
-        {
-            selectedVector = unpushedVector;
-        }*/
         selectedVector = fetchedVector;
     }
     else

@@ -827,7 +827,9 @@ void AddPullPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
 
         ID3D11ShaderResourceView* ppSrvs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1) + finerLayer].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::InpaintedDepthLv1) + finerLayer].srv
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::InpaintedDepthLv1) + finerLayer].srv,
+            InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv
         };
         g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
