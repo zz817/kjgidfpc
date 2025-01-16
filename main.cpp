@@ -938,7 +938,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     // Pulling
     // First leg, 0->1
     {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::FirstLeg)], nullptr, 0);
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Pull)], nullptr, 0);
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
@@ -1072,7 +1072,7 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].srv
     };
     g_pContext->CSSetShaderResources(0, 6, ppSrvs);

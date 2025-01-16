@@ -34,7 +34,7 @@ static float3 debugYellow = float3(1.0f, 1.0f, 0.0f);
 static float3 debugMagenta = float3(1.0f, 0.0f, 1.0f);
 static float3 debugCyan = float3(0.0f, 1.0f, 1.0f);
 
-#define DEBUG_COLORS
+//#define DEBUG_COLORS
 
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]
@@ -129,7 +129,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
 
-    //finalSample = float3(abs(motionReprojectedHalfTopRaw[currentPixelIndex]), 0.0f);
+    finalSample = 12.8f * float3(abs(motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0)), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);

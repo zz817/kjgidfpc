@@ -54,28 +54,26 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float2 finerVector = motionVectorFiner[finerIndex];
             float finerDepth = depthTextureFiner[finerIndex];
             
-            if (all(finerVector < ImpossibleMotionValue))
+            finerVectors[i] = finerVector;
+            finerDepths[i] = finerDepth;
+            
+            if (any(finerVector >= ImpossibleMotionValue))
             {
-                finerVectors[i] = finerVector;
-                finerDepths[i] = finerDepth;
-                
-                reprojectedVector = reprojectedVector + finerVector;
-                reprojectedDepth = reprojectedDepth + finerDepth;
+                validSampleFlagga[i] = INVALID_SAMPLE_FLAG;
+            }
+            else
+            {
+                reprojectedVector += finerVectors[i];
+                reprojectedDepth += finerDepths[i];
                 
                 validSampleFlagga[i] = VALID_SAMPLE_FLAGGA;
                 validSamples += 1;
             }
-            else
-            {
-                finerVectors[i] = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-                finerDepths[i] = 0.0f;
-                validSampleFlagga[i] = INVALID_SAMPLE_FLAG;
-            }
-            
-            float normalization = SafeRcp(float(validSamples));
-            reprojectedVector = reprojectedVector * normalization;
-            reprojectedDepth = reprojectedDepth * normalization;
         }
+        
+        float normalization = SafeRcp(float(validSamples));
+        reprojectedVector = reprojectedVector * normalization;
+        reprojectedDepth = reprojectedDepth * normalization;
     }
     
     bool isOutofScreenFlag = false; //true: inpaint, false: otherwise

@@ -54,11 +54,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float2 finerVector = motionVectorFiner[finerIndex];
             float finerDepth = depthTextureFiner[finerIndex];
             
+            finerVectors[i] = finerVector;
+            finerDepths[i] = finerDepth;
+            
             if (all(finerVector < ImpossibleMotionValue))
             {
-                finerVectors[i] = finerVector;
-                finerDepths[i] = finerDepth;
-                
                 reprojectedVector = reprojectedVector + finerVector;
                 reprojectedDepth = reprojectedDepth + finerDepth;
                 
@@ -67,8 +67,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             }
             else
             {
-                finerVectors[i] = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-                finerDepths[i] = 0.0f;
                 validSampleFlagga[i] = INVALID_SAMPLE_FLAG;
             }
             
