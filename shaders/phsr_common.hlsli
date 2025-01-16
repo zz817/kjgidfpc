@@ -108,6 +108,7 @@ float SafeRcpRetAlot(float x)
 }
 
 #define FOUR_POINTS_TIAN_SIZE 4
+#define FIVE_POINT_STENCIL_SIZE 5
 #define THREE_BY_THREE_PATCH_SIZE 9
 #define THREE_BY_THREE_PATCH_DIM 3
 

@@ -3,8 +3,9 @@
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCoarser;
-Texture2D<float> depthTextureTip;
-Texture2D<float> depthTextureCoarser;
+Texture2D<float2> motionVectorCurrRaw;
+Texture2D<float> depthTextureFiner;
+Texture2D<float> depthTextureCurrRaw;
 
 RWTexture2D<float2> motionVectorFinerUAV;
 RWTexture2D<float> depthTextureFinerUAV;
@@ -28,25 +29,22 @@ SamplerState bilinearClampedSampler : register(s0);
 void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint groupThreadIndex : SV_GroupIndex)
 {
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
-	int2 finerPixelIndex = dispatchThreadId;
-	int2 coarserPixelIndex = finerPixelIndex / 2;
-    
-    float2 surfaceInv = float2(1.0f, 1.0f) / float2(FinerDimension);
+    int2 finerPixelIndex = dispatchThreadId;
+    int2 coarserPixelIndex = finerPixelIndex / 2;
     
     float2 pixelCenter = float2(finerPixelIndex) + 0.5f;
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
-	
+    
     float2 unpushedVector = motionVectorFiner[finerPixelIndex];
     float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];
     
     float2 halfTopTranslation = fetchedVector * tipTopDistance.y;
     float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
     float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float fetchedFinerDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
+    float fetchedFinerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
     
     float2 selectedVector = 0.0f;
-    float coarserDepth = depthTextureCoarser[coarserPixelIndex];
     if (any(unpushedVector >= ImpossibleMotionValue))
     {
         selectedVector = fetchedVector;
@@ -55,12 +53,13 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         selectedVector = unpushedVector;
     }
-	
-	{
-		bool bIsValidhistoryPixel = all(uint2(finerPixelIndex) < FinerDimension);
-		if (bIsValidhistoryPixel)
-		{
-			motionVectorFinerUAV[finerPixelIndex] = selectedVector;
-		}
-	}
+    
+    {
+        bool bIsValidhistoryPixel = all(uint2(finerPixelIndex) < FinerDimension);
+        if (bIsValidhistoryPixel)
+        {
+            motionVectorFinerUAV[finerPixelIndex] = selectedVector;
+            //depthTextureFinerUAV[finerPixelIndex] = votedDepth;
+        }
+    }
 }

@@ -129,7 +129,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
 
-    finalSample = 12.8f * float3(abs(motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0)), 0.0f);
+    //finalSample = 12.8f * float3(abs(motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0)), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);

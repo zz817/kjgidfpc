@@ -6,8 +6,8 @@ Texture2D<float2> motionVectorCurrRaw;
 Texture2D<float> depthTextureFiner;
 Texture2D<float> depthTextureCurrRaw;
 
-RWTexture2D<float2> motionVectorCoarser;
-RWTexture2D<float> depthTextureCoarser;
+RWTexture2D<float2> motionVectorSearched;
+RWTexture2D<float> depthTextureSearched;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -36,31 +36,30 @@ bool isOutofScreen(float2 screenPos)
 void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint groupThreadIndex : SV_GroupIndex)
 {
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
-    int2 coarserPixelIndex = dispatchThreadId;
+    int2 currentPixelIndex = dispatchThreadId;
     
-    int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
     //Cached values
-    float2 finerVectors[FOUR_POINTS_TIAN_SIZE];
-    float finerDepths[FOUR_POINTS_TIAN_SIZE];
-    int validSampleFlagga[FOUR_POINTS_TIAN_SIZE];
+    float2 finerVectors[FIVE_POINT_STENCIL_SIZE];
+    float finerDepths[FIVE_POINT_STENCIL_SIZE];
+    int validSampleFlagga[FIVE_POINT_STENCIL_SIZE];
     
-    float2 reprojectedVector = float2(0.0f, 0.0f);
-    float reprojectedDepth = 0.0f;
+    float2 reprojAvgVector = float2(0.0f, 0.0f);
+    float reprojAvgDepth = 0.0f;
     int validSamples = 0;
     {
-        for (int i = 0; i < subsampleCount4PointTian; ++i)
+        for (int i = 0; i < subsampleCount5PointStencil; ++i)
         {
-            int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
-            float2 finerVector = motionVectorFiner[finerIndex];
-            float finerDepth = depthTextureFiner[finerIndex];
+            int2 patchElementIndex = currentPixelIndex + subsamplePixelOffset5PointStencil[i];
+            float2 finerVector = motionVectorFiner[patchElementIndex];
+            float finerDepth = depthTextureFiner[patchElementIndex];
             
             finerVectors[i] = finerVector;
             finerDepths[i] = finerDepth;
             
             if (all(finerVector < ImpossibleMotionValue))
             {
-                reprojectedVector = reprojectedVector + finerVector;
-                reprojectedDepth = reprojectedDepth + finerDepth;
+                reprojAvgVector = reprojAvgVector + finerVector;
+                reprojAvgDepth = reprojAvgDepth + finerDepth;
                 
                 validSampleFlagga[i] = VALID_SAMPLE_FLAGGA;
                 validSamples += 1;
@@ -69,101 +68,59 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             {
                 validSampleFlagga[i] = INVALID_SAMPLE_FLAG;
             }
-            
-            float normalization = SafeRcp(float(validSamples));
-            reprojectedVector = reprojectedVector * normalization;
-            reprojectedDepth = reprojectedDepth * normalization;
         }
+        
+        float normalization = SafeRcp(float(validSamples));
+        reprojAvgVector = reprojAvgVector * normalization;
+        reprojAvgDepth = reprojAvgDepth * normalization;
     }
     
     bool isOutofScreenFlag = false; //true: inpaint, false: otherwise
-    bool isOcclUncoverFlag = false; //true: uncover, false: inpaint
+    
+    float2 pixelCenter = float2(currentPixelIndex) + 0.5f;
+    float2 viewportUV = pixelCenter * viewportInv;
+    float2 screenPos = viewportUV;
+    const float distanceTop = tipTopDistance.y;
+    float2 halfTopTranslation = distanceTop * reprojAvgVector;
+    float2 topTracedScreenPos = screenPos - halfTopTranslation; //Now it's back at the top
+    if (isOutofScreen(topTracedScreenPos))
     {
-        const float distanceTop = tipTopDistance.y;
-        
-        float unprojectedDepth = 0.0f;
-        int invalidSampleCount = subsampleCount4PointTian - validSamples;
-        for (int i = 0; i < subsampleCount4PointTian; ++i)
+        isOutofScreenFlag = true;
+    }
+    float2 sampleUVTop = clamp(topTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+    float unprojectedDepth = depthTextureCurrRaw.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
+    
+    float2 filteredVector = motionVectorFiner[currentPixelIndex];
+    float filteredDepth = depthTextureFiner[currentPixelIndex];
+    if (validSampleFlagga[0] == INVALID_SAMPLE_FLAG)
+    {
+        for (int i = 1; i < subsampleCount5PointStencil; ++i)
         {
-            if (validSampleFlagga[i] == INVALID_SAMPLE_FLAG)
+            if (validSampleFlagga[i] == VALID_SAMPLE_FLAGGA)
             {
-                int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
                 float2 finerVector = finerVectors[i];
-                float finerDepth = finerDepths[i];
-                
-                float2 pixelCenter = float2(finerIndex) + 0.5f;
-                float2 viewportUV = pixelCenter * viewportInv;
-                float2 screenPos = viewportUV;
-                
-                float2 halfTopTranslation = distanceTop * reprojectedVector;
-                float2 topTracedScreenPos = screenPos - halfTopTranslation;
-                
-                if (isOutofScreen(topTracedScreenPos))
+                float reprojectedDepth = finerDepths[i];
+                if (unprojectedDepth < reprojectedDepth)
                 {
-                    isOutofScreenFlag = true;
+                    filteredVector = finerVector + float2(ImpossibleMotionValue, ImpossibleMotionValue);
+                    filteredDepth = reprojectedDepth;
                     break;
                 }
-                
-                float2 sampleUVTop = clamp(topTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-                unprojectedDepth += depthTextureCurrRaw.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
             }
         }
-        
-        float normalizationInvalid = SafeRcp(float(invalidSampleCount));
-        unprojectedDepth = unprojectedDepth * normalizationInvalid;
-        
-#ifdef DEPTH_LESSER_CLOSER
-        if (reprojectedDepth < unprojectedDepth)
-#endif
-#ifdef DEPTH_GREATER_CLOSER
-        if (reprojectedDepth > unprojectedDepth)
-#endif
-        {
-            isOcclUncoverFlag = true;
-        }
-        else
-        {
-            isOcclUncoverFlag = false;
-        }
     }
-    
-    float2 filteredVector = float2(0.0f, 0.0f);
-    float filteredDepth = 0.0f;
-    if (validSamples == subsampleCount4PointTian)
+    if (isOutofScreenFlag)
     {
-        filteredVector = reprojectedVector;
-        filteredDepth = reprojectedDepth;
-    }
-    else if (validSamples > 0)
-    {
-        if (isOutofScreenFlag)
-        {
-            filteredVector = reprojectedVector;
-            filteredDepth = reprojectedDepth;
-        }
-        else if (!isOcclUncoverFlag)
-        {
-            filteredVector = reprojectedVector;
-            filteredDepth = reprojectedDepth;
-        }
-        else
-        {
-            filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);;
-            filteredDepth = 0.0f;
-        }
-    }
-    else
-    {
-        filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-        filteredDepth = 0.0f;
+        filteredVector = reprojAvgVector;
+        filteredDepth = reprojAvgDepth;
     }
     
     {
-        bool bIsValidhistoryPixel = all(uint2(coarserPixelIndex) < CoarserDimension);
+        bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < FinerDimension);
         if (bIsValidhistoryPixel)
         {
-            motionVectorCoarser[coarserPixelIndex] = filteredVector;
-            depthTextureCoarser[coarserPixelIndex] = filteredDepth;
+            motionVectorSearched[currentPixelIndex] = filteredVector;
+            depthTextureSearched[currentPixelIndex] = filteredDepth;
         }
     }
 }

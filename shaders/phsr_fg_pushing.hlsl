@@ -3,8 +3,9 @@
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCoarser;
+Texture2D<float2> motionVectorCurrRaw;
 Texture2D<float> depthTextureFiner;
-Texture2D<float> depthTextureCoarser;
+Texture2D<float> depthTextureCurrRaw;
 
 RWTexture2D<float2> motionVectorFinerUAV;
 RWTexture2D<float> depthTextureFinerUAV;
@@ -41,14 +42,29 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 halfTopTranslation = fetchedVector * tipTopDistance.y;
     float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
     float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float fetchedFinerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
     
     float2 selectedVector = 0.0f;
-    float coarserDepth = depthTextureCoarser[coarserPixelIndex];
-    float votedDepth = 0.0f;
-    if (any(unpushedVector >= ImpossibleMotionValue))
+    if (any(unpushedVector == ImpossibleMotionOffset))
     {
-        selectedVector = fetchedVector;
+        if (any(fetchedVector > ImpossibleMotionValue))
+        {
+            selectedVector = fetchedVector - float2(ImpossibleMotionValue, ImpossibleMotionValue);
+        }
+        else
+        {
+            selectedVector = fetchedVector;
+        }
+    }
+    else if (any(unpushedVector > ImpossibleMotionValue))
+    {
+        if (any(fetchedVector > ImpossibleMotionValue))
+        {
+            selectedVector = fetchedVector - float2(ImpossibleMotionValue, ImpossibleMotionValue);
+        }
+        else
+        {
+            selectedVector = fetchedVector;
+        }
     }
     else
     {
@@ -60,7 +76,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         if (bIsValidhistoryPixel)
         {
             motionVectorFinerUAV[finerPixelIndex] = selectedVector;
-            depthTextureFinerUAV[finerPixelIndex] = votedDepth;
+            depthTextureFinerUAV[finerPixelIndex] = 0.0f;
         }
     }
 }

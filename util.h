@@ -59,6 +59,7 @@ enum class InternalResType : uint32_t {
   
   CurrMvecDuplicated,
  
+  MotionVectorLv0,
   MotionVectorLv1,
   MotionVectorLv2,
   MotionVectorLv3,
@@ -67,6 +68,7 @@ enum class InternalResType : uint32_t {
   MotionVectorLv6,
   MotionVectorLv7,
 
+  InpaintedDepthLv0,
   InpaintedDepthLv1,
   InpaintedDepthLv2,
   InpaintedDepthLv3,
@@ -320,6 +322,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::ReprojectedMV:
     case InternalResType::ReprojectedMVFilled:
     case InternalResType::CurrMvecDuplicated:
+    case InternalResType::MotionVectorLv0:
     case InternalResType::MotionVectorLv1:
     case InternalResType::MotionVectorLv2:
     case InternalResType::MotionVectorLv3:
@@ -337,6 +340,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 
     case InternalResType::ReprojectedDepth:
     case InternalResType::ReprojectedDepthFilled:
+    case InternalResType::InpaintedDepthLv0:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::InpaintedDepthLv2:
     case InternalResType::InpaintedDepthLv3:
@@ -369,6 +373,8 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedDepth:
     case InternalResType::ReprojectedDepthFilled:
     case InternalResType::CurrMvecDuplicated:
+    case InternalResType::MotionVectorLv0:
+    case InternalResType::InpaintedDepthLv0:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
