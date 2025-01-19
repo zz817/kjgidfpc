@@ -56,7 +56,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             finerVectors[i] = finerVector;
             finerDepths[i] = finerDepth;
             
-            if (all(finerVector < ImpossibleMotionValue))
+            if (all(finerVector < ImpossibleMotionBorderline))
             {
                 reprojAvgVector = reprojAvgVector + finerVector;
                 reprojAvgDepth = reprojAvgDepth + finerDepth;
@@ -75,52 +75,12 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         reprojAvgDepth = reprojAvgDepth * normalization;
     }
     
-    bool isOutofScreenFlag = false; //true: inpaint, false: otherwise
-    
-    float2 pixelCenter = float2(currentPixelIndex) + 0.5f;
-    float2 viewportUV = pixelCenter * viewportInv;
-    float2 screenPos = viewportUV;
-    const float distanceTop = tipTopDistance.y;
-    float2 halfTopTranslation = distanceTop * reprojAvgVector;
-    float2 topTracedScreenPos = screenPos - halfTopTranslation; //Now it's back at the top
-    if (isOutofScreen(topTracedScreenPos))
-    {
-        isOutofScreenFlag = true;
-    }
-    float2 sampleUVTop = clamp(topTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float unprojectedDepth = depthTextureCurrRaw.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
-    
-    float2 filteredVector = motionVectorFiner[currentPixelIndex];
-    float filteredDepth = depthTextureFiner[currentPixelIndex];
-    if (validSampleFlagga[0] == INVALID_SAMPLE_FLAG)
-    {
-        for (int i = 1; i < subsampleCount5PointStencil; ++i)
-        {
-            if (validSampleFlagga[i] == VALID_SAMPLE_FLAGGA)
-            {
-                float2 finerVector = finerVectors[i];
-                float reprojectedDepth = finerDepths[i];
-                if (unprojectedDepth < reprojectedDepth)
-                {
-                    filteredVector = finerVector + float2(ImpossibleMotionValue, ImpossibleMotionValue);
-                    filteredDepth = reprojectedDepth;
-                    break;
-                }
-            }
-        }
-    }
-    if (isOutofScreenFlag)
-    {
-        filteredVector = reprojAvgVector;
-        filteredDepth = reprojAvgDepth;
-    }
-    
     {
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < FinerDimension);
         if (bIsValidhistoryPixel)
         {
-            motionVectorSearched[currentPixelIndex] = filteredVector;
-            depthTextureSearched[currentPixelIndex] = filteredDepth;
+            motionVectorSearched[currentPixelIndex] = reprojAvgVector;
+            depthTextureSearched[currentPixelIndex] = reprojAvgDepth;
         }
     }
 }

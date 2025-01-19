@@ -3,9 +3,8 @@
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCoarser;
-Texture2D<float2> motionVectorCurrRaw;
 Texture2D<float> depthTextureFiner;
-Texture2D<float> depthTextureCurrRaw;
+Texture2D<float> depthTextureCoarser;
 
 RWTexture2D<float2> motionVectorFinerUAV;
 RWTexture2D<float> depthTextureFinerUAV;
@@ -38,32 +37,33 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     
     float2 unpushedVector = motionVectorFiner[finerPixelIndex];
     float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];
+    float unpushedDepth = depthTextureFiner[finerPixelIndex];
+    float fetchedFinerDepth = depthTextureCoarser[coarserPixelIndex];
     
     float2 halfTopTranslation = fetchedVector * tipTopDistance.y;
     float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
     float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     
     float2 selectedVector = 0.0f;
-    if (any(unpushedVector == ImpossibleMotionOffset))
+    float selectedDepth = 0.0f;
+    if (any(unpushedVector == ImpossibleMotionUnwritten))
     {
-        if (any(fetchedVector > ImpossibleMotionValue))
-        {
-            selectedVector = fetchedVector - float2(ImpossibleMotionValue, ImpossibleMotionValue);
-        }
-        else
-        {
-            selectedVector = fetchedVector;
-        }
+        selectedVector = fetchedVector;
     }
-    else if (any(unpushedVector > ImpossibleMotionValue))
+    else if (any(unpushedVector > ImpossibleMotionContested))
     {
-        if (any(fetchedVector > ImpossibleMotionValue))
+#ifdef DEPTH_LESSER_CLOSER
+        if (unpushedDepth < fetchedFinerDepth)
+#endif
+#ifdef DEPTH_GREATER_CLOSER
+        if (unpushedDepth > fetchedFinerDepth)
+#endif
         {
-            selectedVector = fetchedVector - float2(ImpossibleMotionValue, ImpossibleMotionValue);
+            selectedVector = fetchedVector;
         }
         else
         {
-            selectedVector = fetchedVector;
+            selectedVector = unpushedVector;
         }
     }
     else

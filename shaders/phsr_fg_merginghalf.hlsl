@@ -53,7 +53,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float depthHalfTopCaliberated = currDepthUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
     if (bIsHalfTopUnwritten)
     {
-        motionHalfTopCaliberated = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+        motionHalfTopCaliberated = float2(ImpossibleMotionUnwritten, ImpossibleMotionUnwritten);
     }
 	
 	{

@@ -41,13 +41,14 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
     //Cached values
     float2 reprojectedVector = float2(0.0f, 0.0f);
-    float2 contestedVector = float2(0.0f, 0.0f);
+    float2 contestedFurthestVector = float2(0.0f, 0.0f);
     float reprojectedDepth = 0.0f;
-    float contestedDepth = 0.0f;
+    float contestedFurthestDepth = ClosestDepth;
     
     float2 filteredVector = float2(0.0f, 0.0f);
     float filteredDepth = 0.0f;
     {
+        float2 validVector = float2(0.0f, 0.0f);
         int validSamples = 0;
         int contestedSamples = 0;
         for (int i = 0; i < subsampleCount4PointTian; ++i)
@@ -56,34 +57,57 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float2 finerVector = motionVectorFiner[finerIndex];
             float finerDepth = depthTextureFiner[finerIndex];
             
-            if (all(finerVector < ImpossibleMotionValue))
+            if (all(finerVector < ImpossibleMotionBorderline))
             {
                 reprojectedVector += finerVector;
                 reprojectedDepth += finerDepth;
                 validSamples += 1;
             }
-            else if (all(finerVector < ImpossibleMotionOffset))
+            else if (all(finerVector) < ImpossibleMotionUnwritten)
             {
-                contestedVector += (finerVector - float2(ImpossibleMotionValue, ImpossibleMotionValue));
-                contestedDepth += finerDepth;
+                finerVector -= float2(ImpossibleMotionContested, ImpossibleMotionContested);
+                //We want the furthest depth chosen as the contested
+#ifdef DEPTH_LESSER_CLOSER
+                if (finerDepth > contestedFurthestDepth)
+#endif
+#ifdef DEPTH_GREATER_CLOSER
+                if (finerDepth < contestedFurthestDepth)
+#endif
+                {
+                    contestedFurthestVector = finerVector;
+                    contestedFurthestDepth = finerDepth;
+                }
                 contestedSamples += 1;
             }
+            else
+            {
+                //Do nothing
+            }
         }
+        int unwrittenSamples = subsampleCount4PointTian - validSamples - contestedSamples;
+        reprojectedVector = reprojectedVector * SafeRcp(float(validSamples));
+        reprojectedDepth = reprojectedDepth * SafeRcp(float(validSamples));
+        
         if (validSamples == subsampleCount4PointTian)
         {
-            filteredVector = reprojectedVector / float(subsampleCount4PointTian);
-            filteredDepth = reprojectedDepth / float(subsampleCount4PointTian);
+            filteredVector = reprojectedVector;
+            filteredDepth = reprojectedDepth;
         }
         else if (contestedSamples > 0)
         {
-            filteredVector = contestedVector / float(contestedSamples);
-            filteredDepth = contestedDepth / float(contestedSamples);
-            filteredVector += float2(ImpossibleMotionValue, ImpossibleMotionValue);
+            filteredVector = contestedFurthestVector;
+            filteredDepth = contestedFurthestDepth;
+        }
+        else if (unwrittenSamples == subsampleCount4PointTian)
+        {
+            filteredVector = float2(ImpossibleMotionUnwritten, ImpossibleMotionUnwritten);
+            filteredDepth = 0.0f;
         }
         else
         {
-            filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
-            filteredDepth = 0.0f;
+            filteredVector = reprojectedVector;
+            filteredVector += float2(ImpossibleMotionContested, ImpossibleMotionContested);
+            filteredDepth = reprojectedDepth;
         }
     }
     

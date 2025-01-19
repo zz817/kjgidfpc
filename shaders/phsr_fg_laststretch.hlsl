@@ -3,9 +3,8 @@
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCoarser;
-Texture2D<float2> motionVectorCurrRaw;
 Texture2D<float> depthTextureFiner;
-Texture2D<float> depthTextureCurrRaw;
+Texture2D<float> depthTextureCoarser;
 
 RWTexture2D<float2> motionVectorFinerUAV;
 RWTexture2D<float> depthTextureFinerUAV;
@@ -16,7 +15,7 @@ cbuffer shaderConsts : register(b0)
     uint2 CoarserDimension;
     
     float2 tipTopDistance;
-    float2 viewportInv;
+    float2 viewportInv; //1.0f / float2(FinerDimension);
 }
 
 SamplerState bilinearClampedSampler : register(s0);
@@ -38,16 +37,48 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     
     float2 unpushedVector = motionVectorFiner[finerPixelIndex];
     float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];
+    float unpushedDepth = depthTextureFiner[finerPixelIndex];
+    float fetchedFinerDepth = depthTextureCoarser[coarserPixelIndex];
     
     float2 halfTopTranslation = fetchedVector * tipTopDistance.y;
     float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
     float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    float fetchedFinerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
     
     float2 selectedVector = 0.0f;
-    if (any(unpushedVector >= ImpossibleMotionValue))
+    float selectedDepth = 0.0f;
+    
+    if (any(fetchedVector > ImpossibleMotionContested))
+    {
+        if (any(fetchedVector == ImpossibleMotionUnwritten))
+        {
+            //Abandon ship
+            fetchedVector = float2(0.0f, 0.0f);
+        }
+        else
+        {
+            fetchedVector -= float2(ImpossibleMotionContested, ImpossibleMotionContested);
+        }
+    }
+    
+    if (any(unpushedVector == ImpossibleMotionUnwritten))
     {
         selectedVector = fetchedVector;
+    }
+    else if (any(unpushedVector > ImpossibleMotionContested))
+    {
+#ifdef DEPTH_LESSER_CLOSER
+        if (unpushedDepth < fetchedFinerDepth)
+#endif
+#ifdef DEPTH_GREATER_CLOSER
+        if (unpushedDepth > fetchedFinerDepth)
+#endif
+        {
+            selectedVector = fetchedVector;
+        }
+        else
+        {
+            selectedVector = unpushedVector;
+        }
     }
     else
     {
@@ -59,7 +90,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         if (bIsValidhistoryPixel)
         {
             motionVectorFinerUAV[finerPixelIndex] = selectedVector;
-            //depthTextureFinerUAV[finerPixelIndex] = votedDepth;
+            depthTextureFinerUAV[finerPixelIndex] = 0.0f;
         }
     }
 }

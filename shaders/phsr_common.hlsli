@@ -20,7 +20,7 @@ uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 //#define DEPTH_GREATER_CLOSER
 
 #define DepthFirst19DigitsMask 0xFFFFE000
-#define DepthFirst31DigitsMask 0xFFFFFFFE
+//#define DepthFirst31DigitsMask 0xFFFFFFFE
 
 #define MaxDepthFirst19Digits 0xFFFFE000
 #define MinDepthFirst19Digits 0x00000000
@@ -33,21 +33,25 @@ uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 #define WrittenLast1DigitMT1 0x00000001
 
 #ifdef DEPTH_LESSER_CLOSER
-static uint UnwrittenPackedClearValue = MaxDepthFirst19Digits | UnwrittenLast13DigitsMask;
+const static uint UnwrittenPackedClearValue = MaxDepthFirst19Digits | UnwrittenLast13DigitsMask;
+const static uint UnwrittenIndexIndicator = MaxDepthFirst19Digits | UnwrittenLast13DigitsMask;
+const static float ClosestDepth = 0.0f;
+const static float FurthestDepth = 1.0f;
 #endif
 #ifdef DEPTH_GREATER_CLOSER
-static uint UnwrittenPackedClearValue = MinDepthFirst19Digits | UnwrittenLast13DigitsMask;
+const static uint UnwrittenPackedClearValue = MinDepthFirst19Digits | UnwrittenLast13DigitsMask;
+const static uint UnwrittenIndexIndicator = MinDepthFirst19Digits | UnwrittenLast13DigitsMask;
+const static float ClosestDepth = 1.0f;
+const static float FurthestDepth = 0.0f;
 #endif
-static uint UnwrittenIndexIndicator = UnwrittenLast13DigitsMask;
-static uint UnwrittenMTSSIndicator = UnwrittenLast1DigitMT1;
-static uint WrittenMTSSIndicator = WrittenLast1DigitMT1;
 
-static float ImpossibleMotionValue = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
-static float ImpossibleMotionOffset = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
+const static float ImpossibleMotionBorderline = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
+const static float ImpossibleMotionContested = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
+const static float ImpossibleMotionUnwritten = 4.0f; //Have to use this 2's power to prevent floating point gimmicks
 
 //static int depthTotalBits = 19;
-static int expCustomized = 7;
-static int manCustomized = 12;
+const static int expCustomized = 7;
+const static int manCustomized = 12;
 
 //Nasha depth: No sig, 7bits exp, 12bits mantissa
 uint compressDepth(float incomingDepth)
