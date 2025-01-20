@@ -105,26 +105,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 sampleUVTop = topTracedScreenPos;
     sampleUVTop = clamp(sampleUVTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-    //float2 sampleUVSpare = spareTracedScreenPos;
-    //sampleUVSpare = clamp(sampleUVSpare, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-	
+    
     float3 tipSample = colorTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float tipDepth = depthTextureTip.SampleLevel(bilinearClampedSampler, sampleUVTip, 0);
     float3 topSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
     float topDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVTop, 0);
-    //float3 spareSample = colorTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-    //float spareDepth = depthTextureTop.SampleLevel(bilinearClampedSampler, sampleUVSpare, 0);
-    
-    /*
-    if (any(abs(tipTracedScreenPos - sampleUVTip)) > 0.0f)
-    {
-        tipSample = 0.0f;
-    }
-    if (any(abs(topTracedScreenPos - sampleUVTop)) > 0.0f)
-    {
-        topSample = 0.0f;
-    }
-    */
     
     float3 finalSample = float3(0.0f, 0.0f, 0.0f);
     if (isTopVisible)
@@ -132,7 +117,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = topSample;
 #ifdef DEBUG_COLORS
         finalSample = debugRed;
-        //finalSample = float3(halfTopTranslation, 0.0f);
 #endif
     }
     else
@@ -141,21 +125,16 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
-        //finalSample = float3(halfTipTranslation, 0.0f);
 #endif
     }
 
-    //finalSample = float3(abs(motionReprojectedHalfTopRaw[currentPixelIndex]), 0.0f);
+    finalSample = 12.8f * float3(abs(motionReprojectedHalfTopPyr[currentPixelIndex]), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
-            //float4 uiColorBlendingIn = uiColorTexture[currentPixelIndex];
-            //float3 finalOutputColor = lerp(finalSample, uiColorBlendingIn.rgb, uiColorBlendingIn.a);
             outputTexture[currentPixelIndex] = float4(finalSample, 1.0f);
-            //outputTexture[currentPixelIndex] = float4(motionUnprojected[currentPixelIndex], motionUnprojected[currentPixelIndex]);
-            //outputTexture[currentPixelIndex] = float4(abs(velocityHalfPyr), 0.0f, 1.0f);
         }
     }
 }

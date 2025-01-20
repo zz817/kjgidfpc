@@ -1,9 +1,7 @@
 #pragma warning(error: 3206)
 
-#define mtss_float half
-#define mtss_float2 half2
-#define mtss_float3 half3
-#define mtss_float4 half4
+#define mtss_float float
+#define mtss_float2 float2
 
 uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 {
@@ -90,54 +88,6 @@ uint compressDepth(float incomingDepth)
 mtss_float SafeRcp(mtss_float x)
 {
     return x > 0.0 ? rcp(float(x)) : 0.0;
-}
-
-mtss_float3 SafeRcp3(mtss_float3 x)
-{
-    return float3(SafeRcp(x.r), SafeRcp(x.g), SafeRcp(x.b));
-}
-
-mtss_float SafeRcpRet1(mtss_float x)
-{
-    return x > 0.0 ? rcp(float(x)) : 1.0;
-}
-
-mtss_float3 SafeRcp3Ret1(mtss_float3 x)
-{
-    return float3(SafeRcpRet1(x.r), SafeRcpRet1(x.g), SafeRcpRet1(x.b));
-}
-
-mtss_float SafeRcpRetAlot(mtss_float x)
-{
-    return x > 0.0 ? rcp(float(x)) : 1000000.0;
-}
-
-// Some bright pixel can cause HdrWeight to get nullified under fp16 representation. So clamping this to a value close to the minimum float float positive value (0.000061).
-#define HDR_WEIGHT_SAFE_MIN_VALUE 0.0001
-
-// Faster but less accurate luma computation. 
-// Luma includes a scaling by 4.
-mtss_float Luma4(mtss_float3 Color)
-{
-    return (Color.g * mtss_float(2.0)) + (Color.r + Color.b);
-}
-
-mtss_float HdrWeightY(mtss_float Color)
-{
-    mtss_float Exposure = mtss_float(1.0);
-
-    return max(mtss_float(HDR_WEIGHT_SAFE_MIN_VALUE), rcp(Color * Exposure + mtss_float(4.0)));
-}
-
-mtss_float HdrWeightInvY(mtss_float Color)
-{
-    return mtss_float(4.0) * rcp(mtss_float(1.0) - Color);
-}
-
-// Optimized HDR weighting function.
-mtss_float HdrWeight4(mtss_float3 Color)
-{
-    return HdrWeightY(Luma4(Color));
 }
 
 float2 ComputeStaticVelocityTipTop(float2 ScreenPos, float DeviceZ, float4x4 TopClipToTipClip)
@@ -344,27 +294,6 @@ float3 Tonemap(float3 c)
 {
 #ifdef TONEMAPPING_ENABLED
     return c * rcp(c + 1.0f);
-#else
-    return c;
-#endif
-}
-
-// When the filter kernel is a weighted sum of fetched colors,
-// it is more optimal to fold the weighting into the tonemap operation.
-float3 TonemapWithWeight(float3 c, float w)
-{
-#ifdef TONEMAPPING_ENABLED
-    return c * (w * rcp(c + 1.0f));
-#else
-    return c * w;
-#endif  
-}
-
-// Apply this to restore the linear HDR color before writing out the result of the resolve.
-float3 TonemapInvert(float3 c)
-{
-#ifdef TONEMAPPING_ENABLED
-    return c * SafeRcp3Ret1(1.0f - c);
 #else
     return c;
 #endif

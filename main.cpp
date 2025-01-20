@@ -936,14 +936,14 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     // Pulling
     // First leg, 0->1
     {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::FirstLeg)], nullptr, 0);
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Pull)], nullptr, 0);
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
-            InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
+            //InternalResourceViewList[static_cast<uint32_t>(InternalResType::CurrMvecDuplicated)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv
+            //InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         };
-        g_pContext->CSSetShaderResources(0, 4, ppSrvs);
+        g_pContext->CSSetShaderResources(0, 2, ppSrvs);
 
         ID3D11UnorderedAccessView* ppUavs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1)].uav,
@@ -964,8 +964,8 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
 
         ID3D11UnorderedAccessView* emptyUavs[2] = {nullptr};
         g_pContext->CSSetUnorderedAccessViews(0, 2, emptyUavs, nullptr);
-        ID3D11ShaderResourceView* emptySrvs[4] = { nullptr };
-        g_pContext->CSSetShaderResources(0, 4, emptySrvs);
+        ID3D11ShaderResourceView* emptySrvs[2] = { nullptr };
+        g_pContext->CSSetShaderResources(0, 2, emptySrvs);
     }
 
     ppParameters.becomeCoarser();
@@ -1026,7 +1026,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     // Last stretch
     // 1->0
     {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::LastStretch)], nullptr, 0);
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Push)], nullptr, 0);
 
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
@@ -1174,10 +1174,6 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMV)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)],
                               7);
-            /*
-            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTip)],
-                              InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedHalfTipFiltered)],
-                              7);*/
         }
 
         {

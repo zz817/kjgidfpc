@@ -32,7 +32,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 filteredVector = 0.0f;
     float filteredDepth = 0.0f;
     {
-        float validSamples = 0.0f;
+        int validSamples = 0;
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
             int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
@@ -51,18 +51,17 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             {
                 filteredVector += finerVector;
                 filteredDepth += finerDepth;
-                validSamples += 1.0f;
+                validSamples += 1;
             }
         }
-        if (validSamples == 0.0f)
+        if (validSamples == 0)
         {
             filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
             filteredDepth = 0.0f;
         }
         else
         {
-            float perPixelWeight = validSamples * SafeRcp(float(subsampleCount4PointTian));
-            float normalization = SafeRcp(validSamples);
+            float normalization = SafeRcp(float(validSamples));
             filteredVector *= normalization;
             filteredDepth *= normalization;
         }
