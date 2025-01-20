@@ -47,7 +47,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 screenPos = viewportUV;
 
     float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
-    bool isTopInvisible = any(velocityHalfRaw >= ImpossibleMotionValue) ? true : false;
+    bool isTopInvisible = any(velocityHalfRaw >= ConfirmedMotionCat1) ? true : false;
     bool isTopVisible = !isTopInvisible;
     
     float2 velocityProx = 0.0f;
@@ -59,7 +59,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
         int2 pixelPatchIndex = currentPixelIndex + offset;
         float2 velocityProxTopElement = motionReprojectedHalfTopRaw[pixelPatchIndex];
-        bool isViableProxTop = any(velocityProxTopElement >= ImpossibleMotionValue) ? false : true;
+        bool isViableProxTop = any(velocityProxTopElement >= ConfirmedMotionCat1) ? false : true;
         if (isViableProxTop)
         {
             float weight = gaussianDistributionWeightForVariance(offset, 3);
@@ -85,7 +85,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     
     float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
-    if (any(velocityHalfPyr >= ImpossibleMotionValue))
+    if (any(velocityHalfPyr >= ConfirmedMotionCat1))
     {
         velocityHalfPyr = 0.0f;
     }

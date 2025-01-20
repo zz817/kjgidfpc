@@ -47,7 +47,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
             float finerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
  
-            if (all(finerVector < ImpossibleMotionValue))
+            if (all(finerVector < ConfirmedMotionCat1))
             {
                 filteredVector += finerVector;
                 filteredDepth += finerDepth;
@@ -56,7 +56,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         }
         if (validSamples == 0)
         {
-            filteredVector = float2(0.0f, 0.0f) + float2(ImpossibleMotionOffset, ImpossibleMotionOffset);
+            filteredVector = float2(UnwrittenMotionCat3, UnwrittenMotionCat3);
             filteredDepth = 0.0f;
         }
         else

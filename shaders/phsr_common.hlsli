@@ -1,8 +1,5 @@
 #pragma warning(error: 3206)
 
-#define mtss_float float
-#define mtss_float2 float2
-
 uint2 ZOrder2DMTSS(uint Index, const uint SizeLog2)
 {
     uint2 Coord = 0;
@@ -45,8 +42,9 @@ static uint UnwrittenIndexIndicator = UnwrittenLast13DigitsMask;
 static uint UnwrittenMTSSIndicator = UnwrittenLast1DigitMT1;
 static uint WrittenMTSSIndicator = WrittenLast1DigitMT1;
 
-static float ImpossibleMotionValue = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
-static float ImpossibleMotionOffset = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float ConfirmedMotionCat1 = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float ContestedMotionCat2 = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
+static float UnwrittenMotionCat3 = 4.0f; //Have to use this 2's power to prevent floating point gimmicks
 
 //static int depthTotalBits = 19;
 static int expCustomized = 7;
@@ -85,7 +83,7 @@ uint compressDepth(float incomingDepth)
     return (returning19Uint << (32 - (expCustomized + manCustomized))) & DepthFirst19DigitsMask;
 }
 
-mtss_float SafeRcp(mtss_float x)
+float SafeRcp(float x)
 {
     return x > 0.0 ? rcp(float(x)) : 0.0;
 }
@@ -159,15 +157,15 @@ static const int2 subsamplePixelOffset9PointPatch[THREE_BY_THREE_PATCH_SIZE] =
     int2(1, 1)
 };
 
-mtss_float gaussianDistributionWeightForVariance(float2 offset, float patchSize)
+float gaussianDistributionWeightForVariance(float2 offset, float patchSize)
 {
     return exp(-3.0f * (offset.x * offset.x + offset.y * offset.y) / ((patchSize + 1.0f) * (patchSize + 1.0f)));
 }
 
-static const mtss_float lanzcosPie = 3.1415926535897932f;
-static const mtss_float lanzcosWidth = 2.0f;
+static const float lanzcosPie = 3.1415926535897932f;
+static const float lanzcosWidth = 2.0f;
 
-mtss_float LanzcosEachDim(mtss_float diff)
+float LanzcosEachDim(float diff)
 {
     if (abs(diff) < 0.00001f)
     {
@@ -179,42 +177,42 @@ mtss_float LanzcosEachDim(mtss_float diff)
     }
     else
     {
-        mtss_float nominator = lanzcosWidth * sin(lanzcosPie * diff) * sin(lanzcosPie * diff / lanzcosWidth);
-        mtss_float denominator = lanzcosPie * lanzcosPie * diff * diff;
+        float nominator = lanzcosWidth * sin(lanzcosPie * diff) * sin(lanzcosPie * diff / lanzcosWidth);
+        float denominator = lanzcosPie * lanzcosPie * diff * diff;
         return nominator * SafeRcp(denominator);
     }
 }
 
-mtss_float UpsampleLanzcos(mtss_float2 diff, mtss_float upsampleFactor)
+float UpsampleLanzcos(float2 diff, float upsampleFactor)
 {
     diff *= (upsampleFactor);
-    mtss_float contributionX = LanzcosEachDim(diff.x);
-    mtss_float contributionY = LanzcosEachDim(diff.y);
+    float contributionX = LanzcosEachDim(diff.x);
+    float contributionY = LanzcosEachDim(diff.y);
     return contributionX * contributionY;
 }
 
-mtss_float UpsampleFilterGaussian(mtss_float2 diff, mtss_float upsampleFactor)
+float UpsampleFilterGaussian(float2 diff, float upsampleFactor)
 {
-    mtss_float u2 = upsampleFactor * upsampleFactor;
+    float u2 = upsampleFactor * upsampleFactor;
     // 1 - 1.9 * x^2 + 0.9 * x^4
-    mtss_float x2 = saturate(u2 * dot(diff, diff));
-    return mtss_float(((mtss_float(0.9f)) * x2 - mtss_float(1.9f)) * x2 + mtss_float(1.0f));
+    float x2 = saturate(u2 * dot(diff, diff));
+    return float(((float(0.9f)) * x2 - float(1.9f)) * x2 + float(1.0f));
 }
 
-mtss_float GetUpsampleKernelWeight(mtss_float2 diff, mtss_float upsampleFactor, mtss_float minimalContribution)
+float GetUpsampleKernelWeight(float2 diff, float upsampleFactor, float minimalContribution)
 {
     //mtss_float kernelWeight = UpsampleBicubic(diff, upsampleFactor);
-    mtss_float kernelWeight = UpsampleLanzcos(diff, upsampleFactor);
+    float kernelWeight = UpsampleLanzcos(diff, upsampleFactor);
     //mtss_float kernelWeight = UpsampleFilterTent(diff, 2.0f * SafeRcp(upsampleFactor));
     //mtss_float kernelWeight = UpsampleFilterGaussian(diff, upsampleFactor);
     //mtss_float kernelWeight = UpsampleFilterUniversal(diff, SafeRcp(upsampleFactor));
     return max(kernelWeight, minimalContribution);
 }
 
-mtss_float GetBlunterKernelWeight(mtss_float2 diff, mtss_float upsampleFactor, mtss_float minimalContribution)
+float GetBlunterKernelWeight(float2 diff, float upsampleFactor, float minimalContribution)
 {
     //mtss_float kernelWeight = UpsampleBicubic(diff, 1.0f);
-    mtss_float kernelWeight = UpsampleFilterGaussian(diff, 0.45f);
+    float kernelWeight = UpsampleFilterGaussian(diff, 0.45f);
     //mtss_float kernelWeight = UpsampleFilterTent(diff, 2.0f * SafeRcp(upsampleFactor));
     //mtss_float kernelWeight = UpsampleFilterGaussian(diff, upsampleFactor);
     //mtss_float kernelWeight = UpsampleFilterUniversal(diff, SafeRcp(upsampleFactor));

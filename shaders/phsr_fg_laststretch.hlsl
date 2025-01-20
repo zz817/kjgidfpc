@@ -47,7 +47,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     
     float2 selectedVector = 0.0f;
     float coarserDepth = depthTextureCoarser[coarserPixelIndex];
-    if (any(unpushedVector >= ImpossibleMotionValue))
+    if (any(unpushedVector >= ConfirmedMotionCat1))
     {
         selectedVector = fetchedVector;
     }
