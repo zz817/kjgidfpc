@@ -121,7 +121,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     else
     {
-        //finalSample = spareDepth < tipDepth ? spareSample : tipSample;
         finalSample = tipSample;
 #ifdef DEBUG_COLORS
         finalSample = debugGreen;
