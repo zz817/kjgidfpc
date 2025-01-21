@@ -7,7 +7,6 @@ Texture2D<float> depthTextureTop;
 
 Texture2D<float2> motionReprojectedHalfTopPyr;
 Texture2D<float2> motionReprojectedHalfTopRaw;
-
 Texture2D<uint> motionReprojectedCAT;
 
 //Texture2D<float4> uiColorTexture;
@@ -53,10 +52,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 
     float2 halfTipTranslation = distanceTip * velocityHalfPyr;
     float2 halfTopTranslation = distanceTop * velocityHalfRaw;
-
+    
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
-
+    
     float2 sampleUVTip = tipTracedScreenPos;
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 sampleUVTop = topTracedScreenPos;
@@ -83,7 +82,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
     
-    //float2 debugMV = motionReprojectedHalfTopRaw.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    float2 debugMV = motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0);
     //finalSample = 12.8f * float3(abs(debugMV), 0.0f);
 
 	{

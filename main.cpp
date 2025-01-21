@@ -824,17 +824,15 @@ void ProcessFrameGenerationFirstLeg(MergeParamStruct* pCb, uint32_t grid[])
     {
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::FirstLeg)], nullptr, 0);
         ID3D11UnorderedAccessView* ppUavs[] = {
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)].uav,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthFiltered)].uav,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATFiltered)].uav
-        };
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].uav};
         g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, nullptr);
 
         ID3D11ShaderResourceView* ppSrvs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
-        };
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv};
         g_pContext->CSSetShaderResources(0, 3, ppSrvs);
 
         g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
@@ -972,8 +970,8 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Pull)], nullptr, 0);
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATFilled)].srv
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].srv
         };
         g_pContext->CSSetShaderResources(0, 3, ppSrvs);
 
@@ -1026,9 +1024,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedDepthLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedCATLv1)].srv
         };
         g_pContext->CSSetShaderResources(0, 6, ppSrvs);
@@ -1068,8 +1066,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATFiltered)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].srv
     };
     g_pContext->CSSetShaderResources(0, 7, ppSrvs);
 
@@ -1184,7 +1182,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         }
 
         {
-            // Filtering Pass
+            // First Leg
             MergeParamStruct cb = {};
             memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
             memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
@@ -1198,7 +1196,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         {
             // Push Pull Pass
-            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)],
+            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)],
                               totalLayers);
         }
