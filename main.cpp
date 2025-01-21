@@ -1026,7 +1026,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     // Last stretch
     // 1->0
     {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Push)], nullptr, 0);
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::LastStretch)], nullptr, 0);
 
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,

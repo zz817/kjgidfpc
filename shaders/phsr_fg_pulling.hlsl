@@ -29,10 +29,18 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int2 coarserPixelIndex = dispatchThreadId;
     
     int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
+    
+    float2 confirmedVector = 0.0f;
+    float confirmedDepth = 0.0f;
+    float2 contestedVector = 0.0f;
+    float contestedDepth = 0.0f;
+    
     float2 filteredVector = 0.0f;
     float filteredDepth = 0.0f;
+    
+    int confirmedSamples = 0;
+    int contestedSamples = 0;
     {
-        int validSamples = 0;
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
             int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
@@ -49,21 +57,47 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
  
             if (all(finerVector < ConfirmedMotionCat1))
             {
-                filteredVector += finerVector;
-                filteredDepth += finerDepth;
-                validSamples += 1;
+                confirmedVector += finerVector;
+                confirmedDepth += finerDepth;
+                confirmedSamples += 1;
+            }
+            else if (all(finerVector < UnwrittenMotionCat3))
+            {
+                finerVector -= ContestedMotionCat2;
+                if (finerDepth > contestedDepth)
+                {
+                    contestedVector = finerVector;
+                    contestedDepth = finerDepth;
+                }
+                contestedSamples += 1;
+            }
+            else
+            {
+                //Do nothing
             }
         }
-        if (validSamples == 0)
+        
+        if (confirmedSamples == subsampleCount4PointTian)
         {
-            filteredVector = float2(UnwrittenMotionCat3, UnwrittenMotionCat3);
-            filteredDepth = 0.0f;
+            filteredVector = confirmedVector * SafeRcp(float(subsampleCount4PointTian));
+            filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount4PointTian));
+        }
+        else if (contestedSamples > 0)
+        {   
+            filteredVector = contestedVector;
+            filteredDepth = contestedDepth;
+        }
+        else if (confirmedSamples != 0)
+        {
+            confirmedVector *= SafeRcp(float(confirmedSamples));
+            confirmedDepth *= SafeRcp(float(confirmedSamples));
+            filteredVector = confirmedVector + float2(ContestedMotionCat2, ContestedMotionCat2);
+            filteredDepth = confirmedDepth;
         }
         else
         {
-            float normalization = SafeRcp(float(validSamples));
-            filteredVector *= normalization;
-            filteredDepth *= normalization;
+            filteredVector = float2(UnwrittenMotionCat3, UnwrittenMotionCat3);
+            filteredDepth = 0.0f;
         }
     }
     
