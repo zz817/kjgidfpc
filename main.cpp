@@ -798,7 +798,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedY)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].uav,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].uav,
         };
         g_pContext->CSSetUnorderedAccessViews(0, 5, ppUavs, nullptr);
 
@@ -944,7 +944,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
         };
         g_pContext->CSSetShaderResources(0, 3, ppSrvs);
 
@@ -999,7 +999,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedDepthLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedCATLv1)].srv
         };
         g_pContext->CSSetShaderResources(0, 6, ppSrvs);
@@ -1039,7 +1039,7 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
     };
     g_pContext->CSSetShaderResources(0, 6, ppSrvs);
 

@@ -53,10 +53,17 @@ enum class InternalResType : uint32_t {
   ReprojectedY,
   
   ReprojectedMV,
-  ReprojectedDepth,
+  ReprojectedMVSmoothed,
   ReprojectedMVFilled,
+
+  ReprojectedDepth,
+  ReprojectedDepthSmoothed,
   ReprojectedDepthFilled,
-  
+
+  ReprojectedCAT,
+  ReprojectedCATSmoothed,
+  //ReprojectedCATFilled,
+
   CurrMvecDuplicated,
  
   MotionVectorLv1,
@@ -89,7 +96,6 @@ enum class InternalResType : uint32_t {
   PushedDepthLv5,
   PushedDepthLv6,
 
-  CATLv0,
   CATLv1,
   CATLv2,
   CATLv3,
@@ -98,7 +104,6 @@ enum class InternalResType : uint32_t {
   CATLv6,
   CATLv7,
 
-  PushedCATLv0,
   PushedCATLv1,
   PushedCATLv2,
   PushedCATLv3,
@@ -335,6 +340,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
       return DXGI_FORMAT_R32_UINT;
 
     case InternalResType::ReprojectedMV:
+    case InternalResType::ReprojectedMVSmoothed:
     case InternalResType::ReprojectedMVFilled:
     case InternalResType::CurrMvecDuplicated:
     case InternalResType::MotionVectorLv1:
@@ -353,6 +359,7 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
       return DXGI_FORMAT_R32G32_FLOAT;
 
     case InternalResType::ReprojectedDepth:
+    case InternalResType::ReprojectedDepthSmoothed:
     case InternalResType::ReprojectedDepthFilled:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::InpaintedDepthLv2:
@@ -369,7 +376,8 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::PushedDepthLv6:
       return DXGI_FORMAT_R32_FLOAT;
 
-    case InternalResType::CATLv0:
+    case InternalResType::ReprojectedCAT:
+    case InternalResType::ReprojectedCATSmoothed:
     case InternalResType::CATLv1:
     case InternalResType::CATLv2:
     case InternalResType::CATLv3:
@@ -377,7 +385,6 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
     case InternalResType::CATLv5:
     case InternalResType::CATLv6:
     case InternalResType::CATLv7:
-    case InternalResType::PushedCATLv0:
     case InternalResType::PushedCATLv1:
     case InternalResType::PushedCATLv2:
     case InternalResType::PushedCATLv3:
@@ -399,12 +406,14 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedX:
     case InternalResType::ReprojectedY:
     case InternalResType::ReprojectedMV:
+    case InternalResType::ReprojectedMVSmoothed:
     case InternalResType::ReprojectedMVFilled:
     case InternalResType::ReprojectedDepth:
+    case InternalResType::ReprojectedDepthSmoothed:
     case InternalResType::ReprojectedDepthFilled:
     case InternalResType::CurrMvecDuplicated:
-    case InternalResType::CATLv0:
-    case InternalResType::PushedCATLv0:
+    case InternalResType::ReprojectedCAT:
+    case InternalResType::ReprojectedCATSmoothed:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
