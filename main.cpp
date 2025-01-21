@@ -1069,7 +1069,7 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATFiltered)].srv
     };
     g_pContext->CSSetShaderResources(0, 7, ppSrvs);
 

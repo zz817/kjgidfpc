@@ -62,7 +62,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     if (selectedCAT == ReprojCAT0ValidSamp)
     {
-        if (validSampleCount < 3)
+        if (validSampleCount <= 4)
         {
             selectedVector = float2(0.0f, 0.0f);
             selectedDepth = 0.0f;
