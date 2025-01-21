@@ -57,6 +57,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         catReprojection = ReprojCAT2Unwritten;
         motionHalfTopCaliberated = float2(0.0f, 0.0f);
+        depthHalfTopCaliberated = 0.0f;
     }
     else
     {
