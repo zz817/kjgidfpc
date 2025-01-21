@@ -973,60 +973,21 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->CSSetShaderResources(0, 3, emptySrvs);
     }
 
-    ppParameters.becomeCoarser();
-    // Pulling
-    // 1->2
-    AddPullPass(1, ppParameters);
-    
-    ppParameters.becomeCoarser();
-    // Pulling
-    // 2->3
-    AddPullPass(2, ppParameters);
+    for (int i = 1; i < layers; i++)
+    {
+        ppParameters.becomeCoarser();
+        // Pulling
+        // i->i+1
+        AddPullPass(i, ppParameters);
+    }
 
-    ppParameters.becomeCoarser();
-    // Pulling
-    // 3->4
-    AddPullPass(3, ppParameters);
-
-    ppParameters.becomeCoarser();
-    // Pulling
-    // 4->5
-    AddPullPass(4, ppParameters);
-
-    ppParameters.becomeCoarser();
-    // Pulling
-    // 5->6
-    AddPullPass(5, ppParameters);
-
-    ppParameters.becomeCoarser();
-    // Pulling
-    // 6->7
-    AddPullPass(6, ppParameters);
-
-    // Pushing
-    // 7->6
-    AddPushPass(6, ppParameters);
-    ppParameters.becomeFiner();
-
-    // 6->5
-    AddPushPass(5, ppParameters);
-    ppParameters.becomeFiner();
-
-    // 5->4
-    AddPushPass(4, ppParameters);
-    ppParameters.becomeFiner();
-
-    // 4->3
-    AddPushPass(3, ppParameters);
-    ppParameters.becomeFiner();
-
-    // 3->2
-    AddPushPass(2, ppParameters);
-    ppParameters.becomeFiner();
-
-    // 2->1
-    AddPushPass(1, ppParameters);
-    ppParameters.becomeFiner();
+    for (int i = layers - 1; i > 0; i--)
+    {
+        // Pushing
+        // i->i-1
+        AddPushPass(i, ppParameters);
+        ppParameters.becomeFiner();
+    }
 
     // Last stretch
     // 1->0
@@ -1077,8 +1038,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::PrevDepth)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::MotionVectorLv1)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv
     };
     g_pContext->CSSetShaderResources(0, 6, ppSrvs);
 
@@ -1180,7 +1141,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             // Push Pull Pass
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMV)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)],
-                              7);
+                              totalLayers);
         }
 
         {

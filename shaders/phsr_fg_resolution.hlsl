@@ -117,14 +117,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     
     float2 debugMV = motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0);
-    /*if (any(debugMV == UnwrittenMotionCat3))
-    {
-        debugMV = float2(0.0f, 0.0f);
-    }
-    else if (any(debugMV >= ConfirmedMotionCat1))
-    {
-        debugMV = float2(0.12f, 0.0f);
-    }*/
     finalSample = 12.8f * float3(abs(debugMV), 0.0f);
 
 	{
