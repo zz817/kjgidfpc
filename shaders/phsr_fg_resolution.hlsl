@@ -46,41 +46,6 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     bool isTopInvisible = velocityHalfCAT == ReprojCAT2Unwritten ? true : false;
     bool isTopVisible = !isTopInvisible;
     
-    float2 velocityProx = 0.0f;
-    bool isProxTopVisible = false;
-    float proxTopNorm = 0.0f;
-    float viableProxCount = 0.0f;
-    for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
-    {
-        int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
-        int2 pixelPatchIndex = currentPixelIndex + offset;
-        float2 velocityProxTopElement = motionReprojectedHalfTopPyr[pixelPatchIndex];
-        uint velocityProxTopCAT = motionReprojectedCAT[pixelPatchIndex];
-        bool isViableProxTop = velocityProxTopCAT == ReprojCAT0ValidSamp ? true : false;
-        if (isViableProxTop)
-        {
-            float weight = gaussianDistributionWeightForVariance(offset, 3);
-            velocityProx += velocityProxTopElement * weight;
-            proxTopNorm += 1.0f * weight;
-            viableProxCount += 1.0f;
-        }
-    }
-    if (viableProxCount > 0.5f * float(subsampleCount9PointPatch))
-    {
-        isProxTopVisible = true;
-    }
-    
-    if (isProxTopVisible)
-    {
-        velocityProx *= SafeRcp(proxTopNorm);
-        if (isTopInvisible)
-        {
-            velocityHalfRaw = velocityProx;
-            isTopInvisible = false;
-            isTopVisible = true;
-        }
-    }
-    
     float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
     
     const float distanceTip = tipTopDistance.x;
