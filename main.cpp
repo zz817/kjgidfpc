@@ -798,7 +798,7 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedY)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].uav,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].uav,
         };
         g_pContext->CSSetUnorderedAccessViews(0, 5, ppUavs, nullptr);
 
@@ -816,6 +816,35 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
         g_pContext->CSSetUnorderedAccessViews(0, 5, emptyUavs, nullptr);
         ID3D11ShaderResourceView* emptySrvs[2] = {nullptr};
         g_pContext->CSSetShaderResources(0, 2, emptySrvs);
+    }
+}
+
+void ProcessFrameGenerationFirstLeg(MergeParamStruct* pCb, uint32_t grid[])
+{
+    {
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::FirstLeg)], nullptr, 0);
+        ID3D11UnorderedAccessView* ppUavs[] = {
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthFiltered)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATFiltered)].uav
+        };
+        g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, nullptr);
+
+        ID3D11ShaderResourceView* ppSrvs[] = {
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
+        };
+        g_pContext->CSSetShaderResources(0, 3, ppSrvs);
+
+        g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
+
+        g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+        ID3D11UnorderedAccessView* emptyUavs[3] = {nullptr};
+        g_pContext->CSSetUnorderedAccessViews(0, 3, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[3] = {nullptr};
+        g_pContext->CSSetShaderResources(0, 3, emptySrvs);
     }
 }
 
@@ -938,13 +967,13 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
     ID3D11Buffer* buf = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)];
 
     // Pulling
-    // First leg, 0->1
+    // 0->1
     {
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Pull)], nullptr, 0);
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATFilled)].srv
         };
         g_pContext->CSSetShaderResources(0, 3, ppSrvs);
 
@@ -999,7 +1028,7 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedDepthLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedCATLv1)].srv
         };
         g_pContext->CSSetShaderResources(0, 6, ppSrvs);
@@ -1039,9 +1068,10 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::CATLv0)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
     };
-    g_pContext->CSSetShaderResources(0, 6, ppSrvs);
+    g_pContext->CSSetShaderResources(0, 7, ppSrvs);
 
     g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
 
@@ -1057,8 +1087,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
 
     ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
     g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
-    ID3D11ShaderResourceView* emptySrvs[6] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 6, emptySrvs);
+    ID3D11ShaderResourceView* emptySrvs[7] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 7, emptySrvs);
 }
 
 void RunAlgo(uint32_t frameIndex, uint32_t total)
@@ -1076,7 +1106,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
 
         ID3D11Query* startQuery = nullptr;
         ID3D11Query* endQuery   = nullptr;
-        ID3D11Query* disjointQuery;
+        ID3D11Query* disjointQuery = nullptr;
 
         D3D11_QUERY_DESC timestampDesc;
         timestampDesc.Query     = D3D11_QUERY_TIMESTAMP;
@@ -1090,8 +1120,24 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         g_pDevice->CreateQuery(&timestampDesc, &startQuery);
         g_pDevice->CreateQuery(&timestampDesc, &endQuery);
         g_pDevice->CreateQuery(&disjointDesc, &disjointQuery);
-        g_pContext->Begin(disjointQuery);
-        g_pContext->End(startQuery);
+        if (disjointQuery == nullptr)
+        {
+            // Handle the error appropriately, e.g., log it or throw an exception
+            std::cerr << "Error: disjointDesc is null." << std::endl;
+        }
+        else
+        {
+            g_pContext->Begin(disjointQuery);
+        }
+        if (startQuery == nullptr)
+        {
+            // Handle the error appropriately, e.g., log it or throw an exception
+            std::cerr << "Error: startQuery is null." << std::endl;
+        }
+        else
+        {
+            g_pContext->End(startQuery);
+        }
         {
             // Clearing
             ClearingConstParamStruct cb = {};
@@ -1138,8 +1184,21 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         }
 
         {
+            // Filtering Pass
+            MergeParamStruct cb = {};
+            memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
+            memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
+            memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
+            memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
+            memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
+            memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+
+            ProcessFrameGenerationFirstLeg(&cb, grid);
+        }
+
+        {
             // Push Pull Pass
-            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMV)],
+            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFiltered)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)],
                               totalLayers);
         }
@@ -1155,30 +1214,45 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
             ProcessFrameGenerationResolution(&cb, grid);
         }
-        g_pContext->End(endQuery);
-        g_pContext->End(disjointQuery);
-
-        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-        UINT64                              startTime = 0;
-        UINT64                              endTime   = 0;
-
-        // Ensure the disjoint query is done
-        while (g_pContext->GetData(disjointQuery, &disjointData, sizeof(disjointData), 0) != S_OK)
-            ;
-        if (disjointData.Disjoint)
+        if (endQuery != nullptr)
         {
-            std::cout << "Time period was disjoint; results are not reliable.\n";
+            g_pContext->End(endQuery);
         }
         else
         {
-            // Get data from the timestamp queries
-            while (g_pContext->GetData(startQuery, &startTime, sizeof(startTime), 0) != S_OK)
-                ;
-            while (g_pContext->GetData(endQuery, &endTime, sizeof(endTime), 0) != S_OK)
-                ;
+            // Handle the error appropriately, e.g., log it or throw an exception
+            std::cerr << "Error: endQuery is null." << std::endl;
+        }
+        if (disjointQuery != nullptr)
+        {
+            g_pContext->End(disjointQuery);
+            D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
+            UINT64                              startTime = 0;
+            UINT64                              endTime   = 0;
 
-            double timeInMs = (endTime - startTime) * 1000.0 / disjointData.Frequency;
-            std::cout << "Elapsed time: " << timeInMs << " ms\n";
+            // Ensure the disjoint query is done
+            while (g_pContext->GetData(disjointQuery, &disjointData, sizeof(disjointData), 0) != S_OK)
+                ;
+            if (disjointData.Disjoint)
+            {
+                std::cout << "Time period was disjoint; results are not reliable.\n";
+            }
+            else
+            {
+                // Get data from the timestamp queries
+                while (g_pContext->GetData(startQuery, &startTime, sizeof(startTime), 0) != S_OK)
+                    ;
+                while (g_pContext->GetData(endQuery, &endTime, sizeof(endTime), 0) != S_OK)
+                    ;
+
+                double timeInMs = (endTime - startTime) * 1000.0 / disjointData.Frequency;
+                std::cout << "Elapsed time: " << timeInMs << " ms\n";
+            }
+        }
+        else
+        {
+            // Handle the error appropriately, e.g., log it or throw an exception
+            std::cerr << "Error: disjointQuery is null." << std::endl;
         }
     }
 

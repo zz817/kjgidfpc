@@ -6,6 +6,8 @@ Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
 Texture2D<float2> motionReprojectedHalfTopPyr;
+Texture2D<float2> motionReprojectedHalfTopRaw;
+
 Texture2D<uint> motionReprojectedCAT;
 
 //Texture2D<float4> uiColorTexture;
@@ -40,7 +42,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 screenPos = viewportUV;
 
     uint velocityHalfCAT = motionReprojectedCAT[currentPixelIndex];
-    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
+    float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
     bool isTopInvisible = velocityHalfCAT == ReprojCAT2Unwritten ? true : false;
     bool isTopVisible = !isTopInvisible;
     
@@ -73,22 +75,22 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         velocityProx *= SafeRcp(proxTopNorm);
         if (isTopInvisible)
         {
-            velocityHalfPyr = velocityProx;
+            velocityHalfRaw = velocityProx;
             isTopInvisible = false;
             isTopVisible = true;
         }
     }
     
+    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
+    
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
     float2 halfTipTranslation = distanceTip * velocityHalfPyr;
-    float2 halfTopTranslation = distanceTop * velocityHalfPyr;
-    float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
+    float2 halfTopTranslation = distanceTop * velocityHalfRaw;
 
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
-    float2 spareTracedScreenPos = screenPos - halfTopSpareTrans;
 
     float2 sampleUVTip = tipTracedScreenPos;
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
@@ -116,8 +118,8 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
     
-    //float2 debugMV = motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0);
-    //finalSample = 12.8f * float3(abs(debugMV), 0.0f);
+    float2 debugMV = motionReprojectedHalfTopRaw.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    finalSample = 12.8f * float3(abs(debugMV), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);

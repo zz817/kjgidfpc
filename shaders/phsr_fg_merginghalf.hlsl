@@ -56,6 +56,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     if (bIsHalfTopUnwritten)
     {
         catReprojection = ReprojCAT2Unwritten;
+        motionHalfTopCaliberated = float2(0.0f, 0.0f);
     }
     else
     {
