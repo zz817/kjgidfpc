@@ -6,6 +6,7 @@ Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
 Texture2D<float2> motionReprojectedHalfTopPyr;
+Texture2D<float2> motionReprojectedHalfTopRaw;
 Texture2D<uint> motionReprojectedCAT;
 
 //Texture2D<float4> uiColorTexture;
@@ -40,56 +41,21 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 screenPos = viewportUV;
 
     uint velocityHalfCAT = motionReprojectedCAT[currentPixelIndex];
-    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
+    float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
     bool isTopInvisible = velocityHalfCAT == ReprojCAT2Unwritten ? true : false;
     bool isTopVisible = !isTopInvisible;
     
-    float2 velocityProx = 0.0f;
-    bool isProxTopVisible = false;
-    float proxTopNorm = 0.0f;
-    float viableProxCount = 0.0f;
-    for (int patchIndex = 1; patchIndex < subsampleCount9PointPatch; ++patchIndex)
-    {
-        int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
-        int2 pixelPatchIndex = currentPixelIndex + offset;
-        float2 velocityProxTopElement = motionReprojectedHalfTopPyr[pixelPatchIndex];
-        uint velocityProxTopCAT = motionReprojectedCAT[pixelPatchIndex];
-        bool isViableProxTop = velocityProxTopCAT == ReprojCAT0ValidSamp ? true : false;
-        if (isViableProxTop)
-        {
-            float weight = gaussianDistributionWeightForVariance(offset, 3);
-            velocityProx += velocityProxTopElement * weight;
-            proxTopNorm += 1.0f * weight;
-            viableProxCount += 1.0f;
-        }
-    }
-    if (viableProxCount > 0.5f * float(subsampleCount9PointPatch))
-    {
-        isProxTopVisible = true;
-    }
-    
-    if (isProxTopVisible)
-    {
-        velocityProx *= SafeRcp(proxTopNorm);
-        if (isTopInvisible)
-        {
-            velocityHalfPyr = velocityProx;
-            isTopInvisible = false;
-            isTopVisible = true;
-        }
-    }
+    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
     
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
     float2 halfTipTranslation = distanceTip * velocityHalfPyr;
-    float2 halfTopTranslation = distanceTop * velocityHalfPyr;
-    float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
-
+    float2 halfTopTranslation = distanceTop * velocityHalfRaw;
+    
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
     float2 topTracedScreenPos = screenPos - halfTopTranslation;
-    float2 spareTracedScreenPos = screenPos - halfTopSpareTrans;
-
+    
     float2 sampleUVTip = tipTracedScreenPos;
     sampleUVTip = clamp(sampleUVTip, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 sampleUVTop = topTracedScreenPos;

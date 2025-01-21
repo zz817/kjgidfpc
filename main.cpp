@@ -1039,9 +1039,10 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrColor)].srv,
         InputResourceViewList[static_cast<uint32_t>(InputResType::CurrDepth)].srv,
         InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)].srv,
-        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)].srv,
+        InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].srv
     };
-    g_pContext->CSSetShaderResources(0, 6, ppSrvs);
+    g_pContext->CSSetShaderResources(0, 7, ppSrvs);
 
     g_pContext->CSSetUnorderedAccessViews(0, 1, &g_pColorOutputUav, nullptr);
 
@@ -1057,8 +1058,8 @@ void ProcessFrameGenerationResolution(ResolutionConstParamStruct* pCb, uint32_t 
 
     ID3D11UnorderedAccessView* emptyUavs[1] = {nullptr};
     g_pContext->CSSetUnorderedAccessViews(0, 1, emptyUavs, 0);
-    ID3D11ShaderResourceView* emptySrvs[6] = {nullptr};
-    g_pContext->CSSetShaderResources(0, 6, emptySrvs);
+    ID3D11ShaderResourceView* emptySrvs[7] = {nullptr};
+    g_pContext->CSSetShaderResources(0, 7, emptySrvs);
 }
 
 void RunAlgo(uint32_t frameIndex, uint32_t total)
