@@ -5,9 +5,12 @@ Texture2D<float2> motionVectorFiner;
 Texture2D<float2> motionVectorCoarser;
 Texture2D<float> depthTextureFiner;
 Texture2D<float> depthTextureCoarser;
+Texture2D<uint> motionCATFiner;
+Texture2D<uint> motionCATCoarser;
 
 RWTexture2D<float2> motionVectorFinerUAV;
 RWTexture2D<float> depthTextureFinerUAV;
+RWTexture2D<uint> motionCATFinerUAV;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -33,8 +36,11 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     
     float2 unpushedVector = motionVectorFiner[finerPixelIndex];
     float unpushedDepth = depthTextureFiner[finerPixelIndex];
+    uint unpushedCAT = motionCATFiner[finerPixelIndex];
+    
     float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];
     float fetchedDepth = depthTextureCoarser[coarserPixelIndex];
+    uint fetchedCAT = motionCATCoarser[coarserPixelIndex];
     
     /*
     float2 surfaceInv = float2(1.0f, 1.0f) / float2(FinerDimension);
@@ -48,14 +54,15 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     */
     
     float2 selectedVector = 0.0f;
-    float coarserDepth = depthTextureCoarser[coarserPixelIndex];
     float votedDepth = 0.0f;
-    if (any(unpushedVector == UnwrittenMotionCat3))
+    uint votedCAT = ReprojCAT0ValidSamp;
+    if (unpushedCAT == ReprojCAT2Unwritten)
     {
         selectedVector = fetchedVector;
         votedDepth = fetchedDepth;
+        votedCAT = fetchedCAT;
     }
-    else if (all(unpushedVector >= ContestedMotionCat2))
+    else if (unpushedCAT == ReprojCAT1Contested)
     {
         if (fetchedDepth > unpushedDepth)
         {
@@ -67,11 +74,13 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             selectedVector = unpushedVector;
             votedDepth = unpushedDepth;
         }
+        votedCAT = ReprojCAT1Contested;
     }
-    else if (all(unpushedVector < ConfirmedMotionCat1))
+    else
     {
         selectedVector = unpushedVector;
         votedDepth = unpushedDepth;
+        votedCAT = unpushedCAT;
     }
     
     {
@@ -80,6 +89,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             motionVectorFinerUAV[finerPixelIndex] = selectedVector;
             depthTextureFinerUAV[finerPixelIndex] = votedDepth;
+            motionCATFinerUAV[finerPixelIndex] = votedCAT;
         }
     }
 }

@@ -6,6 +6,7 @@ RWTexture2D<uint> motionReprojHalfTopY;
 
 RWTexture2D<float2> motionReprojectedMV;
 RWTexture2D<float> motionReprojectedDepth;
+RWTexture2D<uint> motionReprojectedCAT;
 
 Texture2D<float2> currMotionUnprojected;
 Texture2D<float> currDepthUnprojected;
@@ -51,9 +52,14 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     motionCaliberatedUVHalfTop = clamp(motionCaliberatedUVHalfTop, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
     float2 motionHalfTopCaliberated = currMotionUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
     float depthHalfTopCaliberated = currDepthUnprojected.SampleLevel(bilinearClampedSampler, motionCaliberatedUVHalfTop, 0);
+    uint catReprojection = 0;
     if (bIsHalfTopUnwritten)
     {
-        motionHalfTopCaliberated = float2(UnwrittenMotionCat3, UnwrittenMotionCat3);
+        catReprojection = ReprojCAT2Unwritten;
+    }
+    else
+    {
+        catReprojection = ReprojCAT0ValidSamp;
     }
 	
 	{
@@ -62,6 +68,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             motionReprojectedMV[currentPixelIndex] = motionHalfTopCaliberated;
             motionReprojectedDepth[currentPixelIndex] = depthHalfTopCaliberated;
+            motionReprojectedCAT[currentPixelIndex] = catReprojection;
         }
     }
 }

@@ -38,17 +38,31 @@ static uint UnwrittenPackedClearValue = MaxDepthFirst19Digits | UnwrittenLast13D
 #ifdef DEPTH_GREATER_CLOSER
 static uint UnwrittenPackedClearValue = MinDepthFirst19Digits | UnwrittenLast13DigitsMask;
 #endif
-static uint UnwrittenIndexIndicator = UnwrittenLast13DigitsMask;
-static uint UnwrittenMTSSIndicator = UnwrittenLast1DigitMT1;
-static uint WrittenMTSSIndicator = WrittenLast1DigitMT1;
+static const uint UnwrittenIndexIndicator = UnwrittenLast13DigitsMask;
+static const uint UnwrittenMTSSIndicator = UnwrittenLast1DigitMT1;
+static const uint WrittenMTSSIndicator = WrittenLast1DigitMT1;
 
-static float ConfirmedMotionCat1 = 1.0f; //Have to use this 2's power to prevent floating point gimmicks
-static float ContestedMotionCat2 = 2.0f; //Have to use this 2's power to prevent floating point gimmicks
-static float UnwrittenMotionCat3 = 4.0f; //Have to use this 2's power to prevent floating point gimmicks
+static const uint ReprojCAT0ValidSamp = 0x00000000;
+static const uint ReprojCAT1Contested = 0x00000001;
+static const uint ReprojCAT2Unwritten = 0x00000002;
+
+static const float FLT_MAX = 3.402823466e+38f;
 
 //static int depthTotalBits = 19;
-static int expCustomized = 7;
-static int manCustomized = 12;
+static const int expCustomized = 7;
+static const int manCustomized = 12;
+
+static const float3 debugRed = float3(1.0f, 0.0f, 0.0f);
+static const float3 debugGreen = float3(0.0f, 1.0f, 0.0f);
+static const float3 debugBlue = float3(0.0f, 0.0f, 1.0f);
+static const float3 debugYellow = float3(1.0f, 1.0f, 0.0f);
+static const float3 debugMagenta = float3(1.0f, 0.0f, 1.0f);
+static const float3 debugCyan = float3(0.0f, 1.0f, 1.0f);
+
+static const float2 debugCat1 = float2(0.0f, 0.0f);
+static const float2 debugCat2 = float2(0.5f, 0.0f);
+static const float2 debugCat3 = float2(0.5f, 0.5f);
+static const float2 debugCat4 = float2(0.5f, 0.0f);
 
 //Nasha depth: No sig, 7bits exp, 12bits mantissa
 uint compressDepth(float incomingDepth)

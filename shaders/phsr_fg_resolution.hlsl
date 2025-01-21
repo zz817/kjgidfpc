@@ -6,7 +6,7 @@ Texture2D<float3> colorTextureTop;
 Texture2D<float> depthTextureTop;
 
 Texture2D<float2> motionReprojectedHalfTopPyr;
-Texture2D<float2> motionReprojectedHalfTopRaw;
+Texture2D<uint> motionReprojectedCAT;
 
 //Texture2D<float4> uiColorTexture;
 
@@ -27,13 +27,6 @@ SamplerState bilinearClampedSampler : register(s0);
 
 #define TILE_SIZE 8
 
-static float3 debugRed = float3(1.0f, 0.0f, 0.0f);
-static float3 debugGreen = float3(0.0f, 1.0f, 0.0f);
-static float3 debugBlue = float3(0.0f, 0.0f, 1.0f);
-static float3 debugYellow = float3(1.0f, 1.0f, 0.0f);
-static float3 debugMagenta = float3(1.0f, 0.0f, 1.0f);
-static float3 debugCyan = float3(0.0f, 1.0f, 1.0f);
-
 //#define DEBUG_COLORS
 
 [shader("compute")]
@@ -46,8 +39,9 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 viewportUV = pixelCenter * viewportInv;
     float2 screenPos = viewportUV;
 
-    float2 velocityHalfRaw = motionReprojectedHalfTopRaw[currentPixelIndex];
-    bool isTopInvisible = any(velocityHalfRaw >= ConfirmedMotionCat1) ? true : false;
+    uint velocityHalfCAT = motionReprojectedCAT[currentPixelIndex];
+    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
+    bool isTopInvisible = velocityHalfCAT == ReprojCAT2Unwritten ? true : false;
     bool isTopVisible = !isTopInvisible;
     
     float2 velocityProx = 0.0f;
@@ -58,8 +52,9 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     {
         int2 offset = subsamplePixelOffset9PointPatch[patchIndex];
         int2 pixelPatchIndex = currentPixelIndex + offset;
-        float2 velocityProxTopElement = motionReprojectedHalfTopRaw[pixelPatchIndex];
-        bool isViableProxTop = any(velocityProxTopElement >= ConfirmedMotionCat1) ? false : true;
+        float2 velocityProxTopElement = motionReprojectedHalfTopPyr[pixelPatchIndex];
+        uint velocityProxTopCAT = motionReprojectedCAT[pixelPatchIndex];
+        bool isViableProxTop = velocityProxTopCAT == ReprojCAT0ValidSamp ? true : false;
         if (isViableProxTop)
         {
             float weight = gaussianDistributionWeightForVariance(offset, 3);
@@ -78,23 +73,17 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         velocityProx *= SafeRcp(proxTopNorm);
         if (isTopInvisible)
         {
-            velocityHalfRaw = velocityProx;
+            velocityHalfPyr = velocityProx;
             isTopInvisible = false;
             isTopVisible = true;
         }
-    }
-    
-    float2 velocityHalfPyr = motionReprojectedHalfTopPyr[currentPixelIndex];
-    if (any(velocityHalfPyr >= ConfirmedMotionCat1))
-    {
-        velocityHalfPyr = 0.0f;
     }
     
     const float distanceTip = tipTopDistance.x;
     const float distanceTop = tipTopDistance.y;
 
     float2 halfTipTranslation = distanceTip * velocityHalfPyr;
-    float2 halfTopTranslation = distanceTop * velocityHalfRaw;
+    float2 halfTopTranslation = distanceTop * velocityHalfPyr;
     float2 halfTopSpareTrans = distanceTop * velocityHalfPyr;
 
     float2 tipTracedScreenPos = screenPos + halfTipTranslation;
@@ -126,8 +115,17 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         finalSample = debugGreen;
 #endif
     }
-
-    finalSample = 12.8f * float3(abs(motionReprojectedHalfTopPyr[currentPixelIndex]), 0.0f);
+    
+    float2 debugMV = motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0);
+    /*if (any(debugMV == UnwrittenMotionCat3))
+    {
+        debugMV = float2(0.0f, 0.0f);
+    }
+    else if (any(debugMV >= ConfirmedMotionCat1))
+    {
+        debugMV = float2(0.12f, 0.0f);
+    }*/
+    finalSample = 12.8f * float3(abs(debugMV), 0.0f);
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);

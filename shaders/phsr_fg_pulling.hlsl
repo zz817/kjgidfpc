@@ -3,9 +3,11 @@
 //------------------------------------------------------- PARAMETERS
 Texture2D<float2> motionVectorFiner;
 Texture2D<float> depthTextureFiner;
+Texture2D<uint> motionCATFiner;
 
 RWTexture2D<float2> motionVectorCoarser;
-RWTexture2D<float> depthTextureCoarser; //This is coarse too
+RWTexture2D<float> depthTextureCoarser;
+RWTexture2D<uint> motionCATCoarser;
 
 cbuffer shaderConsts : register(b0)
 {
@@ -33,13 +35,15 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 confirmedVector = 0.0f;
     float confirmedDepth = 0.0f;
     float2 contestedVector = 0.0f;
-    float contestedDepth = 0.0f;
+    float contestedDepth = -FLT_MAX;
     
     float2 filteredVector = 0.0f;
     float filteredDepth = 0.0f;
+    uint filteredCAT = ReprojCAT0ValidSamp;
     
     int confirmedSamples = 0;
     int contestedSamples = 0;
+    int invalidSamples = 0;
     {
         for (int i = 0; i < subsampleCount4PointTian; ++i)
         {
@@ -54,16 +58,18 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
             float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
             float finerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
+            
+            uint finerCAT = motionCATFiner[finerIndex];
  
-            if (all(finerVector < ConfirmedMotionCat1))
+            if (finerCAT == ReprojCAT0ValidSamp)
             {
                 confirmedVector += finerVector;
                 confirmedDepth += finerDepth;
                 confirmedSamples += 1;
             }
-            else if (all(finerVector < UnwrittenMotionCat3))
+            else if (finerCAT == ReprojCAT1Contested)
             {
-                finerVector -= ContestedMotionCat2;
+                //finerVector -= ContestedMotionCat2;
                 if (finerDepth > contestedDepth)
                 {
                     contestedVector = finerVector;
@@ -73,32 +79,50 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
             }
             else
             {
-                //Do nothing
+                invalidSamples += 1;
             }
         }
+    }
+    
+    //#define DEBUG_COLORS       
+    if (confirmedSamples == subsampleCount4PointTian)
+    {
+        filteredVector = confirmedVector * SafeRcp(float(subsampleCount4PointTian));
+        filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount4PointTian));
+        filteredCAT = ReprojCAT0ValidSamp;
+#ifdef DEBUG_COLORS
+        filteredVector = debugCat1;
+#endif
+    }
+    else if (contestedSamples > 0)
+    {
+        filteredVector = contestedVector;
+        filteredDepth = contestedDepth;
+        filteredCAT = ReprojCAT1Contested;
+#ifdef DEBUG_COLORS
+        filteredVector = debugCat2;
+#endif
+    }
+    else if (confirmedSamples > 0)
+    {
+        confirmedVector /= float(confirmedSamples);
+        confirmedDepth /= float(confirmedSamples);
         
-        if (confirmedSamples == subsampleCount4PointTian)
-        {
-            filteredVector = confirmedVector * SafeRcp(float(subsampleCount4PointTian));
-            filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount4PointTian));
-        }
-        else if (contestedSamples > 0)
-        {   
-            filteredVector = contestedVector;
-            filteredDepth = contestedDepth;
-        }
-        else if (confirmedSamples != 0)
-        {
-            confirmedVector *= SafeRcp(float(confirmedSamples));
-            confirmedDepth *= SafeRcp(float(confirmedSamples));
-            filteredVector = confirmedVector + float2(ContestedMotionCat2, ContestedMotionCat2);
-            filteredDepth = confirmedDepth;
-        }
-        else
-        {
-            filteredVector = float2(UnwrittenMotionCat3, UnwrittenMotionCat3);
-            filteredDepth = 0.0f;
-        }
+        filteredVector = confirmedVector;
+        filteredDepth = confirmedDepth;
+        filteredCAT = ReprojCAT1Contested;
+#ifdef DEBUG_COLORS
+        filteredVector = debugCat3;
+#endif
+    }
+    else
+    {
+        filteredVector = float2(0.0f, 0.0f);
+        filteredDepth = 0.0f;
+        filteredCAT = ReprojCAT2Unwritten;
+#ifdef DEBUG_COLORS
+        filteredVector = debugCat4;
+#endif
     }
     
     {
@@ -107,6 +131,7 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
         {
             motionVectorCoarser[coarserPixelIndex] = filteredVector;
             depthTextureCoarser[coarserPixelIndex] = filteredDepth;
+            motionCATCoarser[coarserPixelIndex] = filteredCAT;
         }
     }
 }

@@ -89,6 +89,23 @@ enum class InternalResType : uint32_t {
   PushedDepthLv5,
   PushedDepthLv6,
 
+  CATLv0,
+  CATLv1,
+  CATLv2,
+  CATLv3,
+  CATLv4,
+  CATLv5,
+  CATLv6,
+  CATLv7,
+
+  PushedCATLv0,
+  PushedCATLv1,
+  PushedCATLv2,
+  PushedCATLv3,
+  PushedCATLv4,
+  PushedCATLv5,
+  PushedCATLv6,
+
   Count
 };
 
@@ -352,6 +369,23 @@ DXGI_FORMAT GetInternalResFormat(InternalResType type) {
 	case InternalResType::PushedDepthLv6:
       return DXGI_FORMAT_R32_FLOAT;
 
+    case InternalResType::CATLv0:
+    case InternalResType::CATLv1:
+    case InternalResType::CATLv2:
+    case InternalResType::CATLv3:
+    case InternalResType::CATLv4:
+    case InternalResType::CATLv5:
+    case InternalResType::CATLv6:
+    case InternalResType::CATLv7:
+    case InternalResType::PushedCATLv0:
+    case InternalResType::PushedCATLv1:
+    case InternalResType::PushedCATLv2:
+    case InternalResType::PushedCATLv3:
+    case InternalResType::PushedCATLv4:
+    case InternalResType::PushedCATLv5:
+    case InternalResType::PushedCATLv6:
+        return DXGI_FORMAT_R32_UINT;
+
     case InternalResType::Count:
     default:
       return DXGI_FORMAT_UNKNOWN;
@@ -369,46 +403,61 @@ std::pair<uint32_t, uint32_t> GetInternalResResolution(InternalResType type,
     case InternalResType::ReprojectedDepth:
     case InternalResType::ReprojectedDepthFilled:
     case InternalResType::CurrMvecDuplicated:
+    case InternalResType::CATLv0:
+    case InternalResType::PushedCATLv0:
       return {originWidth, originHeight};
 
     case InternalResType::MotionVectorLv1:
     case InternalResType::InpaintedDepthLv1:
     case InternalResType::PushedVectorLv1:
     case InternalResType::PushedDepthLv1:
+    case InternalResType::CATLv1:
+    case InternalResType::PushedCATLv1:
       return {originWidth / 2, originHeight / 2};
 
     case InternalResType::MotionVectorLv2:
     case InternalResType::InpaintedDepthLv2:
     case InternalResType::PushedVectorLv2:
     case InternalResType::PushedDepthLv2:
+    case InternalResType::CATLv2:
+    case InternalResType::PushedCATLv2:
       return {originWidth / 4, originHeight / 4};
 
     case InternalResType::MotionVectorLv3:
     case InternalResType::InpaintedDepthLv3:
     case InternalResType::PushedVectorLv3:
     case InternalResType::PushedDepthLv3:
+    case InternalResType::CATLv3:
+    case InternalResType::PushedCATLv3:
       return {originWidth / 8, originHeight / 8};
 
     case InternalResType::MotionVectorLv4:
     case InternalResType::InpaintedDepthLv4:
     case InternalResType::PushedVectorLv4:
     case InternalResType::PushedDepthLv4:
+    case InternalResType::CATLv4:
+    case InternalResType::PushedCATLv4:
 	  return {originWidth / 16, originHeight / 16};
 
     case InternalResType::MotionVectorLv5:
     case InternalResType::InpaintedDepthLv5:
     case InternalResType::PushedVectorLv5:
     case InternalResType::PushedDepthLv5:
+    case InternalResType::CATLv5:
+    case InternalResType::PushedCATLv5:
       return {originWidth / 32, originHeight / 32};
 
     case InternalResType::MotionVectorLv6:
     case InternalResType::InpaintedDepthLv6:
     case InternalResType::PushedVectorLv6:
     case InternalResType::PushedDepthLv6:
+    case InternalResType::CATLv6:
+    case InternalResType::PushedCATLv6:
       return {originWidth / 64, originHeight / 64};
 
     case InternalResType::MotionVectorLv7:
     case InternalResType::InpaintedDepthLv7:
+    case InternalResType::CATLv7:
       return {originWidth / 128, originHeight / 128};
 
     case InternalResType::Count:
