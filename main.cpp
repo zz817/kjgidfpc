@@ -819,6 +819,33 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
     }
 }
 
+void ProcessFrameGenerationFirstLeg(MergeParamStruct* pCb, uint32_t grid[])
+{
+    {
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::FirstLeg)], nullptr, 0);
+        ID3D11UnorderedAccessView* ppUavs[] = {
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].uav,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].uav};
+        g_pContext->CSSetUnorderedAccessViews(0, 3, ppUavs, nullptr);
+
+        ID3D11ShaderResourceView* ppSrvs[] = {
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMV)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv};
+        g_pContext->CSSetShaderResources(0, 3, ppSrvs);
+
+        g_pContext->CSSetSamplers(0, 1, &SamplerList[static_cast<uint32_t>(SamplerType::LinearClamp)]);
+
+        g_pContext->Dispatch(grid[0], grid[1], grid[2]);
+
+        ID3D11UnorderedAccessView* emptyUavs[3] = {nullptr};
+        g_pContext->CSSetUnorderedAccessViews(0, 3, emptyUavs, nullptr);
+        ID3D11ShaderResourceView* emptySrvs[3] = {nullptr};
+        g_pContext->CSSetShaderResources(0, 3, emptySrvs);
+    }
+}
+
 void AddPullPass(const int coarserLayer, const PyramidParamStruct& ppParameters)
 {
     ID3D11Buffer* buf         = ConstantBufferList[static_cast<uint32_t>(ConstBufferType::PushPull)];
@@ -943,8 +970,8 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Pull)], nullptr, 0);
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].srv
         };
         g_pContext->CSSetShaderResources(0, 3, ppSrvs);
 
@@ -997,9 +1024,9 @@ void AddPushPullPasses(ID3D11Texture2D* pInput, ID3D11Texture2D* pOutput, const 
         ID3D11ShaderResourceView* ppSrvs[] = {
             ResourceViewMap[pInput].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedVectorLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepth)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedDepthLv1)].srv,
-            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCAT)].srv,
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATSmoothed)].srv,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::PushedCATLv1)].srv
         };
         g_pContext->CSSetShaderResources(0, 6, ppSrvs);
@@ -1139,8 +1166,21 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
         }
 
         {
+            // First Leg
+            MergeParamStruct cb = {};
+            memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
+            memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
+            memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
+            memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
+            memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
+            memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+
+            ProcessFrameGenerationFirstLeg(&cb, grid);
+        }
+
+        {
             // Push Pull Pass
-            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMV)],
+            AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)],
                               totalLayers);
         }
