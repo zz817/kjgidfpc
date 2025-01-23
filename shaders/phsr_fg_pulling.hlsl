@@ -45,9 +45,9 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int contestedSamples = 0;
     int invalidSamples = 0;
     {
-        for (int i = 0; i < subsampleCount4PointTian; ++i)
+        for (int i = 0; i < subsampleCount9PointPatch; ++i)
         {
-            int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset4PointTian[i];
+            int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset9PointPatch[i];
             float2 finerVector = motionVectorFiner[finerIndex];
             
             float2 pixelCenter = float2(finerIndex) + 0.5f;
@@ -85,10 +85,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     }
     
     //#define DEBUG_COLORS       
-    if (confirmedSamples == subsampleCount4PointTian)
+    if (confirmedSamples == subsampleCount9PointPatch)
     {
-        filteredVector = confirmedVector * SafeRcp(float(subsampleCount4PointTian));
-        filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount4PointTian));
+        filteredVector = confirmedVector * SafeRcp(float(subsampleCount9PointPatch));
+        filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount9PointPatch));
         filteredCAT = ReprojCAT0ValidSamp;
 #ifdef DEBUG_COLORS
         filteredVector = debugCat1;
