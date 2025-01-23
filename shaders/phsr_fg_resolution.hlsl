@@ -29,6 +29,7 @@ SamplerState bilinearClampedSampler : register(s0);
 #define TILE_SIZE 8
 
 //#define DEBUG_COLORS
+//#define DEBUG_MV
 
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]
@@ -82,8 +83,10 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
 #endif
     }
     
+#ifdef DEBUG_MV
     float2 debugMV = motionReprojectedHalfTopPyr.SampleLevel(bilinearClampedSampler, viewportUV, 0);
     finalSample = 12.8f * float3(abs(debugMV), 0.0f);
+#endif
 
 	{
         bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);

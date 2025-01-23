@@ -147,6 +147,8 @@ static const int2 subsamplePixelOffset4PointTian[FOUR_POINTS_TIAN_SIZE] =
     int2(1, 1)
 };
 
+static const int finerRelativeIndexTab[2] = { -1, 1 };
+
 static const int2 subsamplePixelOffset5PointStencil[5] =
 {
     int2(0, 0), // K

@@ -37,7 +37,26 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     float2 unpushedVector = motionVectorFiner[finerPixelIndex];
     float unpushedDepth = depthTextureFiner[finerPixelIndex];
     uint unpushedCAT = motionCATFiner[finerPixelIndex];
+    /*
+    int2 finerRelativeLocation = finerPixelIndex - 2 * coarserPixelIndex;
+    int2 coarserOffsets[FOUR_POINTS_TIAN_SIZE];
+    coarserOffsets[0] = int2(0, 0);
+    coarserOffsets[1] = finerRelativeLocation.x == 0 ? int2(-1, 0) : int2(1, 0);
+    coarserOffsets[2] = finerRelativeLocation.y == 0 ? int2(0, -1) : int2(0, 1);
+    coarserOffsets[3] = coarserOffsets[1] + coarserOffsets[2];
     
+    float2 fetchedVector = float2(0.0f, 0.0f);
+    float fetchedDepth = 0.0f;
+    uint fetchedCAT = ReprojCAT0ValidSamp;
+    
+    for (int i = 0; i < FOUR_POINTS_TIAN_SIZE; ++i)
+    {
+        int2 fetchedPixelIndex = coarserPixelIndex + coarserOffsets[i];
+        float2 elementVector = motionVectorCoarser[fetchedPixelIndex];
+        float elementDepth = depthTextureCoarser[fetchedPixelIndex];
+        uint elementCAT = motionCATCoarser[fetchedPixelIndex];
+    }
+    */
     float2 fetchedVector = motionVectorCoarser[coarserPixelIndex];
     float fetchedDepth = depthTextureCoarser[coarserPixelIndex];
     uint fetchedCAT = motionCATCoarser[coarserPixelIndex];
