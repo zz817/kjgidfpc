@@ -138,6 +138,10 @@ static const int subsampleCount4PointTian = 4;
 static const int subsampleCount5PointStencil = 5;
 static const int subsampleCount9PointPatch = 9;
 
+#define ATROUS_LAYERS 4
+static const int atrousLayers = 4;
+static const int atrousLayerOffsets[ATROUS_LAYERS] = { 1, 2, 4, 8 };
+
 static const int2 subsamplePixelOffset4PointTian[FOUR_POINTS_TIAN_SIZE] =
 {
     int2(0, 0), //K

@@ -820,10 +820,23 @@ void ProcessFrameGenerationMerging(MergeParamStruct* pCb, uint32_t grid[])
     }
 }
 
-void ProcessFrameGenerationFirstLeg(MergeParamStruct* pCb, uint32_t grid[])
+void ProcessFrameGenerationAtrous(MergeParamStruct* pCb, uint32_t grid[], int iteration)
 {
     {
-        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::FirstLeg)], nullptr, 0);
+        ID3D11UnorderedAccessView* ZigMV =
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVZig)].uav;
+        ID3D11UnorderedAccessView* ZigDepth =
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthZig)].uav;
+        ID3D11UnorderedAccessView* ZigCAT =
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATZig)].uav;
+        ID3D11UnorderedAccessView* ZagMV =
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVZag)].uav;
+        ID3D11UnorderedAccessView* ZagDepth =
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthZag)].uav;
+        ID3D11UnorderedAccessView* ZagCAT =
+            InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedCATZag)].uav;
+
+        g_pContext->CSSetShader(ComputeShaders[static_cast<uint32_t>(ComputeShaderType::Atrous)], nullptr, 0);
         ID3D11UnorderedAccessView* ppUavs[] = {
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)].uav,
             InternalResourceViewList[static_cast<uint32_t>(InternalResType::ReprojectedDepthSmoothed)].uav,
@@ -1182,26 +1195,30 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             ProcessFrameGenerationMerging(&cb, grid);
         }
 
+        static const int iterations = 3;
         {
-            // First Leg
-            MergeParamStruct cb = {};
-            memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
-            memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
-            memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
-            memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
-            memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
-            memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+            // Atrous
+            for (int i = 0; i < iterations; ++i)
+            {
+                MergeParamStruct cb = {};
+                memcpy(cb.prevClipToClip, g_constBufData.prevClipToClip, sizeof(cb.prevClipToClip));
+                memcpy(cb.clipToPrevClip, g_constBufData.clipToPrevClip, sizeof(cb.clipToPrevClip));
+                memcpy(cb.dimensions, g_constBufData.dimensions, sizeof(cb.dimensions));
+                memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
+                memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
+                memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
 
-            ProcessFrameGenerationFirstLeg(&cb, grid);
+                ProcessFrameGenerationAtrous(&cb, grid, i);
+            }
         }
-
+        /*
         {
             // Push Pull Pass
             AddPushPullPasses(InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVSmoothed)],
                               InternalResourceList[static_cast<uint32_t>(InternalResType::ReprojectedMVFilled)],
                               totalLayers);
         }
-
+        */
         {
             // Resolution
             ResolutionConstParamStruct cb = {};

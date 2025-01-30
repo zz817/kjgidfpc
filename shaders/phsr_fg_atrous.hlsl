@@ -1,23 +1,24 @@
 #include "phsr_common.hlsli"
 
 //------------------------------------------------------- PARAMETERS
-Texture2D<float2> motionVectorFiner;
-Texture2D<float> depthTextureFiner;
-Texture2D<uint> motionCATFiner;
+Texture2D<float2> motionVectorRaw;
+Texture2D<float> depthTextureRaw;
+Texture2D<uint> motionCATRaw;
 
-RWTexture2D<float2> motionVectorCoarser;
-RWTexture2D<float> depthTextureCoarser;
-RWTexture2D<uint> motionCATCoarser;
+RWTexture2D<float2> motionVectorFilled;
+RWTexture2D<float> depthTextureFilled;
+RWTexture2D<uint> motionCATFilled;
 
 cbuffer shaderConsts : register(b0)
 {
-    uint2 FinerDimension;
-    uint2 CoarserDimension;
+    float4x4 prevClipToClip;
+    float4x4 clipToPrevClip;
     
+    uint2 dimensions;
     float2 tipTopDistance;
-    float2 viewportInv; //1.0f / float2(FinerDimension);
+    float2 viewportSize;
+    float2 viewportInv;
 }
-
 SamplerState bilinearClampedSampler : register(s0);
 
 #define TILE_SIZE 8
@@ -28,105 +29,54 @@ SamplerState bilinearClampedSampler : register(s0);
 void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint groupThreadIndex : SV_GroupIndex)
 {
     uint2 dispatchThreadId = localId + groupId * uint2(TILE_SIZE, TILE_SIZE);
-    int2 coarserPixelIndex = dispatchThreadId;
-    
-    int2 finerPixelUpperLeft = 2 * coarserPixelIndex;
+    int2 currentPixelIndex = dispatchThreadId;
+	
+    {
+        bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
+        uint currentCAT = motionCATRaw[currentPixelIndex];
+        if (bIsValidhistoryPixel && currentCAT == ReprojCAT0ValidSamp)
+        {
+            motionVectorFilled[currentPixelIndex] = motionVectorRaw[currentPixelIndex];
+            depthTextureFilled[currentPixelIndex] = depthTextureRaw[currentPixelIndex];
+            motionCATFilled[currentPixelIndex] = currentCAT;
+            return;
+        }
+    }
     
     float2 confirmedVector = 0.0f;
     float confirmedDepth = 0.0f;
     float2 contestedVector = 0.0f;
     float contestedDepth = -FLT_MAX;
     
-    float2 filteredVector = 0.0f;
-    float filteredDepth = 0.0f;
-    uint filteredCAT = ReprojCAT0ValidSamp;
-    
-    int confirmedSamples = 0;
-    int contestedSamples = 0;
-    int invalidSamples = 0;
     {
-        for (int i = 0; i < subsampleCount9PointPatch; ++i)
+        for (int layer = 0; layer < atrousLayers; ++layer)
         {
-            int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset9PointPatch[i];
-            float2 finerVector = motionVectorFiner[finerIndex];
-            
-            float2 pixelCenter = float2(finerIndex) + 0.5f;
-            float2 viewportUV = pixelCenter * viewportInv;
-            float2 screenPos = viewportUV;
-            
-            float2 halfTopTranslation = finerVector * tipTopDistance.y;
-            float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
-            float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-            float finerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
-            
-            uint finerCAT = motionCATFiner[finerIndex];
- 
-            if (finerCAT == ReprojCAT0ValidSamp)
+            for (int i = 0; i < subsampleCount9PointPatch; ++i)
             {
-                confirmedVector += finerVector;
-                confirmedDepth += finerDepth;
-                confirmedSamples += 1;
-            }
-            else if (finerCAT == ReprojCAT1Contested)
-            {
-                //finerVector -= ContestedMotionCat2;
-                if (finerDepth > contestedDepth)
+                int2 finerIndex = currentPixelIndex + subsamplePixelOffset9PointPatch[i] * atrousLayerOffsets[layer];
+                
+                float2 elementVector = motionVectorRaw[finerIndex];
+                float elementDepth = depthTextureRaw[finerIndex];
+                uint elementCAT = motionCATRaw[finerIndex];
+                
+                if (elementCAT == ReprojCAT0ValidSamp)
                 {
-                    contestedVector = finerVector;
-                    contestedDepth = finerDepth;
+                    if (elementDepth > contestedDepth)
+                    {
+                        contestedVector = elementVector;
+                        contestedDepth = elementDepth;
+                    }
                 }
-                contestedSamples += 1;
-            }
-            else
-            {
-                invalidSamples += 1;
             }
         }
     }
     
-    //#define DEBUG_COLORS       
-    if (confirmedSamples == subsampleCount9PointPatch)
+    float2 filteredVector = 0.0f;
+    float filteredDepth = 0.0f;
+    uint filteredCAT = ReprojCAT0ValidSamp;
+   
     {
-        filteredVector = confirmedVector * SafeRcp(float(subsampleCount9PointPatch));
-        filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount9PointPatch));
-        filteredCAT = ReprojCAT0ValidSamp;
-#ifdef DEBUG_COLORS
-        filteredVector = debugCat1;
-#endif
-    }
-    else if (contestedSamples > 0)
-    {
-        filteredVector = contestedVector;
-        filteredDepth = contestedDepth;
-        filteredCAT = ReprojCAT1Contested;
-#ifdef DEBUG_COLORS
-        filteredVector = debugCat2;
-#endif
-    }
-    else if (confirmedSamples > 0)
-    {
-        confirmedVector /= float(confirmedSamples);
-        confirmedDepth /= float(confirmedSamples);
-        
-        filteredVector = confirmedVector;
-        filteredDepth = confirmedDepth;
-        filteredCAT = ReprojCAT1Contested;
-#ifdef DEBUG_COLORS
-        filteredVector = debugCat3;
-#endif
-    }
-    else
-    {
-        filteredVector = float2(0.0f, 0.0f);
-        filteredDepth = 0.0f;
-        filteredCAT = ReprojCAT2Unwritten;
-#ifdef DEBUG_COLORS
-        filteredVector = debugCat4;
-#endif
-    }
-    
-    {
-        bool bIsValidhistoryPixel = all(uint2(coarserPixelIndex) < CoarserDimension);
+        bool bIsValidhistoryPixel = all(uint2(currentPixelIndex) < dimensions);
         if (bIsValidhistoryPixel)
         {
             motionVectorCoarser[coarserPixelIndex] = filteredVector;
