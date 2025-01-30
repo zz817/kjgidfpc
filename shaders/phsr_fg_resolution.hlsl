@@ -29,7 +29,7 @@ SamplerState bilinearClampedSampler : register(s0);
 #define TILE_SIZE 8
 
 //#define DEBUG_COLORS
-//#define DEBUG_MV
+#define DEBUG_MV
 
 [shader("compute")]
 [numthreads(TILE_SIZE, TILE_SIZE, 1)]

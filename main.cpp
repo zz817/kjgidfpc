@@ -567,7 +567,8 @@ void PrepareInput(uint32_t frameIndex)
     auto stagDepth      = StagResourceList[static_cast<size_t>(StagResType::Depth)];
 
     {
-        std::string clipFile     = "ClipInfo/clipinfo_" + std::to_string(frameIndex) + ".bin";
+        //std::string clipFile     = "ClipInfo/clipinfo_" + std::to_string(frameIndex) + ".bin";
+        std::string clipFile     = "ClipInfo/clipinfo_0.bin";
         auto        pervClipInfo = AcquireFileContent(clipFile);
 
         uint32_t offset = 0;
@@ -1210,6 +1211,7 @@ void RunAlgo(uint32_t frameIndex, uint32_t total)
             memcpy(cb.tipTopDistance, g_constBufData.tipTopDistance, sizeof(g_constBufData.tipTopDistance));
             memcpy(cb.viewportInv, g_constBufData.viewportInv, sizeof(g_constBufData.viewportInv));
             memcpy(cb.viewportSize, g_constBufData.viewportSize, sizeof(g_constBufData.viewportSize));
+
             ProcessFrameGenerationResolution(&cb, grid);
         }
         if (endQuery != nullptr)
@@ -1288,7 +1290,7 @@ int main()
         {ComputeShaderType::Normalizing,  "phsr_fg_normalizing.dxbc" },
         {ComputeShaderType::Reprojection, "phsr_fg_reprojection.dxbc"},
         {ComputeShaderType::MergeHalf,    "phsr_fg_merginghalf.dxbc" },
-        //{ComputeShaderType::MergeFull,    "phsr_fg_mergingfull.dxbc" },
+        {ComputeShaderType::Atrous,       "phsr_fg_atrous.dxbc" },
         {ComputeShaderType::FirstLeg,     "phsr_fg_firstleg.dxbc"    },
         {ComputeShaderType::Pull,         "phsr_fg_pulling.dxbc"     },
         {ComputeShaderType::LastStretch,  "phsr_fg_laststretch.dxbc" },

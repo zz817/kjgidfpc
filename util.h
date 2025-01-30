@@ -18,15 +18,12 @@ enum class ComputeShaderType : uint32_t {
   Normalizing,
   Reprojection,
   MergeHalf,
-  MergeFull,
   FirstLeg,
   Pull,
   LastStretch,
   Push,
   Resolution,
-  AxPb,
-  Multiply,
-  InnerProduct,
+  Atrous,
   Count
 };
 
@@ -53,14 +50,26 @@ enum class InternalResType : uint32_t {
   ReprojectedY,
   
   ReprojectedMV,
+
+  ReprojectedMVZig,
+  ReprojectedMVZag,
+
   ReprojectedMVSmoothed,
   ReprojectedMVFilled,
 
   ReprojectedDepth,
+
+  ReprojectedDepthZig,
+  ReprojectedDepthZag,
+
   ReprojectedDepthSmoothed,
   ReprojectedDepthFilled,
 
   ReprojectedCAT,
+
+  ReprojectedCATZig,
+  ReprojectedCATZag,
+
   ReprojectedCATSmoothed,
   //ReprojectedCATFilled,
 
