@@ -133,6 +133,9 @@ bool IsOffScreen(uint bCameraCut, float2 ScreenPos)
 #define FOUR_POINTS_TIAN_SIZE 4
 #define THREE_BY_THREE_PATCH_SIZE 9
 #define THREE_BY_THREE_PATCH_DIM 3
+#define ATROUS_LAYERS 4
+
+static const int atrousStrides[ATROUS_LAYERS] = { 1, 2, 4, 8 };
 
 static const int subsampleCount4PointTian = 4;
 static const int subsampleCount5PointStencil = 5;

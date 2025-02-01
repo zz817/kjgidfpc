@@ -45,50 +45,53 @@ void main(uint2 groupId : SV_GroupID, uint2 localId : SV_GroupThreadID, uint gro
     int contestedSamples = 0;
     int invalidSamples = 0;
     {
-        for (int i = 0; i < subsampleCount9PointPatch; ++i)
+        for (int stride = 0; stride < ATROUS_LAYERS; ++stride)
         {
-            int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset9PointPatch[i];
-            float2 finerVector = motionVectorFiner[finerIndex];
+            for (int i = 0; i < subsampleCount9PointPatch; ++i)
+            {
+                int2 finerIndex = finerPixelUpperLeft + subsamplePixelOffset9PointPatch[i] * atrousStrides[stride];
+                float2 finerVector = motionVectorFiner[finerIndex];
             
-            float2 pixelCenter = float2(finerIndex) + 0.5f;
-            float2 viewportUV = pixelCenter * viewportInv;
-            float2 screenPos = viewportUV;
+                float2 pixelCenter = float2(finerIndex) + 0.5f;
+                float2 viewportUV = pixelCenter * viewportInv;
+                float2 screenPos = viewportUV;
             
-            float2 halfTopTranslation = finerVector * tipTopDistance.y;
-            float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
-            float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
-            float finerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
+                float2 halfTopTranslation = finerVector * tipTopDistance.y;
+                float2 halfTopTracedScreenPos = screenPos + halfTopTranslation; //Now it's at the tip
+                float2 sampleUVHalfTop = clamp(halfTopTracedScreenPos, float2(0.0f, 0.0f), float2(1.0f, 1.0f));
+                float finerDepth = depthTextureFiner.SampleLevel(bilinearClampedSampler, sampleUVHalfTop, 0);
             
-            uint finerCAT = motionCATFiner[finerIndex];
+                uint finerCAT = motionCATFiner[finerIndex];
  
-            if (finerCAT == ReprojCAT0ValidSamp)
-            {
-                confirmedVector += finerVector;
-                confirmedDepth += finerDepth;
-                confirmedSamples += 1;
-            }
-            else if (finerCAT == ReprojCAT1Contested)
-            {
-                //finerVector -= ContestedMotionCat2;
-                if (finerDepth > contestedDepth)
+                if (finerCAT == ReprojCAT0ValidSamp)
                 {
-                    contestedVector = finerVector;
-                    contestedDepth = finerDepth;
+                    confirmedVector += finerVector;
+                    confirmedDepth += finerDepth;
+                    confirmedSamples += 1;
                 }
-                contestedSamples += 1;
-            }
-            else
-            {
-                invalidSamples += 1;
+                else if (finerCAT == ReprojCAT1Contested)
+                {
+                //finerVector -= ContestedMotionCat2;
+                    if (finerDepth > contestedDepth)
+                    {
+                        contestedVector = finerVector;
+                        contestedDepth = finerDepth;
+                    }
+                    contestedSamples += 1;
+                }
+                else
+                {
+                    invalidSamples += 1;
+                }
             }
         }
     }
     
     //#define DEBUG_COLORS       
-    if (confirmedSamples == subsampleCount9PointPatch)
+    if (confirmedSamples >= subsampleCount9PointPatch)
     {
-        filteredVector = confirmedVector * SafeRcp(float(subsampleCount9PointPatch));
-        filteredDepth = confirmedDepth * SafeRcp(float(subsampleCount9PointPatch));
+        filteredVector = confirmedVector * SafeRcp(float(confirmedSamples));
+        filteredDepth = confirmedDepth * SafeRcp(float(confirmedSamples));
         filteredCAT = ReprojCAT0ValidSamp;
 #ifdef DEBUG_COLORS
         filteredVector = debugCat1;
