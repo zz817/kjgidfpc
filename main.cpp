@@ -567,7 +567,7 @@ void PrepareInput(uint32_t frameIndex)
     auto stagDepth      = StagResourceList[static_cast<size_t>(StagResType::Depth)];
 
     {
-        std::string clipFile     = "ClipInfo/clipinfo_" + std::to_string(frameIndex) + ".bin";
+        std::string clipFile     = "ClipInfo/clipinfo_0.bin";
         auto        pervClipInfo = AcquireFileContent(clipFile);
 
         uint32_t offset = 0;
